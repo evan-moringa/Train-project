@@ -1,5 +1,5 @@
 body{
-    background-color: burlywood;
+    background-color: navy;
 }
 
 
@@ -7,7 +7,7 @@ body{
 
 .h1{
     text-align: center;
-    color: black;
+    color: white;
     
 }
 
@@ -18,8 +18,10 @@ body{
     padding: 10px;
 }
 
-h2{
+
+h4{
+    color: whitesmoke;
+    background-color: teal;
     text-align: center;
-    background-color: black;
-    text-decoration-color: aliceblue;
+    padding: 10px;
 }
