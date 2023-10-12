@@ -1,5 +1,5 @@
 body{
-    background-color: darkkhaki;
+    background-color: burlywood;
 }
 
 
@@ -16,4 +16,10 @@ body{
     color: white;
     text-align: center;
     padding: 10px;
+}
+
+h2{
+    text-align: center;
+    background-color: black;
+    text-decoration-color: aliceblue;
 }
