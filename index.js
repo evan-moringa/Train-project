@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Initial data load when the page loads
-    fetchAndDisplayTrainInfo(apiUrl);
+    fetchAndDisplayTrainInfo(api_Url);
 });
 
 document.addEventListener("DOMContentLoaded", function () {
