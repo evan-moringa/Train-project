@@ -54,10 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 }
             })
-            .catch((error) => {
-                console.error("Error fetching train data:", error);
-                trainInfoElement.innerHTML = "Error fetching train data.";
-            });
+        
     }
 
     // Initial data load when the page loads
@@ -69,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const loadDataButton = document.getElementById("load-data-button");
 
     // Replace with the URL of your train information API
-    const apiUrl = `http://localhost:3000/trains/${data.trains_id}`;
+    const apiUrl = `http://localhost:3000/trains/`;
 
     // Function to fetch and display train information
     function fetchAndDisplayTrainInfo(apiUrl) {
