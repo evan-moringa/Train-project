@@ -1,0 +1,19 @@
+body{
+    background-color: darkkhaki;
+}
+
+
+
+
+.h1{
+    text-align: center;
+    color: black;
+    
+}
+
+#footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px;
+}

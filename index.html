@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="index.js"></script>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" integrity="sha384-nU14brUcp6StFntEOOEBvcJm4huWjB0OcIeQ3fltAfSmuZFrkAif0T+UtNGlKKQv" crossorigin="anonymous">
+    <link rel="stylesheet" href="index.css">
+    <title>Railway tracking and arrival system</title>
+  </head>
+
+  <body>
+  <p class="h1">Train tracking system </p>
+
+<!--navbar-->
+<nav class="navbar bg-dark">
+    <form class="container-fluid">
+      <div class="input-group">
+        <span class="input-group-text" id="basic-addon1">Add Username:</span>
+        <input type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="basic-addon1">
+      </div>
+    </form>
+  </nav>
+
+
+ 
+<h2>Train Ticket Booking</h2>
+<div id="train-info"></div>
+
+    <form>
+        <label for="train-select">Select a Train:</label>
+        <select id="train-select">
+            <!-- Train options will be added dynamically from JavaScript -->
+        </select>
+        <label for="ticket-count">Number of Tickets:</label>
+        <input type="number" id="ticket-count" min="1" value="1">
+        <button id="book-button" type="button">Book Tickets</button>
+    </form>
+    <h3>Select the train you want to use below; </h3>
+    <div class="Train-info">
+      <div class="card-group">
+        <div class="card">
+          <img src="https://www.financialexpress.com/wp-content/uploads/2023/06/vande-bharat-express.jpg" class="card-img-top" alt="loading">
+          <div class="card-body">
+            <h5 class="card-title">Express train</h5>
+            <p class="card-text">This is our express train</p>
+            <p class="card-text"><small class="text-body-secondary">Click the link below to access timings</small></p>
+            <button type="button" id="btn-btn-primary"
+            style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+     View Details</button>
+          </div>
+        </div>
+    
+        <div class="card">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b4/Western-Railway-Medha-EMU.jpg" class="card-img-top" alt="loading">
+          <div class="card-body">
+            <h5 class="card-title">Local train</h5>
+            <p class="card-text">This is our local train</p>
+            <p class="card-text"><small class="text-body-secondary">Click the link below to access timings</small></p>
+            <button type="button" id="btn-btn-primary"
+            style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+      View details</button>
+          </div>
+        </div>
+    
+        <div class="card">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/JRE-TEC-E5_omiya.JPG/1200px-JRE-TEC-E5_omiya.JPG" class="card-img-top" alt="Loading">
+          <div class="card-body">
+            <h5 class="card-title">Bullet train</h5>
+            <p class="card-text">This is our bullet train</p>
+            <p class="card-text"><small class="text-body-secondary">Click the link below to access timings</small></p>
+            <button type="button" id="btn-btn-primary"
+            style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+      View details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+</div>
+
+
+
+
+<div id="footer">
+    &copy; 2023 Your Train Timings App
+</div>
+
+
+  </body>
+</html>
+
+
+  
+ 

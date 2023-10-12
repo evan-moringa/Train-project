@@ -1,0 +1,25 @@
+{
+  "trains": [
+    {
+      "train_id": "1",
+      "train_name": "Express Train",
+      "departure_time": "08:00 AM",
+      "arrival_time": "11:30 AM",
+      "image_url": "https://www.financialexpress.com/wp-content/uploads/2023/06/vande-bharat-express.jpg"
+    },
+    {
+      "train_id": "2",
+      "train_name": "Local Train",
+      "departure_time": "09:30 AM",
+      "arrival_time": "01:00 PM",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/b/b4/Western-Railway-Medha-EMU.jpg"
+    },
+    {
+      "train_id": "3",
+      "train_name": "High-Speed Train",
+      "departure_time": "10:15 AM",
+      "arrival_time": "12:45 PM",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/JRE-TEC-E5_omiya.JPG/1200px-JRE-TEC-E5_omiya.JPG"
+    }
+  ]
+}
