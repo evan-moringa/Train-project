@@ -61,17 +61,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchAndDisplayTrainInfo(api_Url);
 });
 
-//document.addEventListener("DOMContentLoaded", function () {
-   
-    // Add a click event listener to the button
-    loadDataButton.addEventListener("click", fetchAndDisplayTrainInfo);
 
-
-    // Function to handle the "Book Tickets" button click
-    function bookTickets() {
-        // Implement the ticket booking logic here
-        alert("Tickets have been booked ");
-    }
 
 
 
