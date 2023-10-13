@@ -1,4 +1,4 @@
-fetch(`http://localhost:3000/trains/`)
+fetch(`https://trains-project.onrender.com/trains/`)
 .then (res => res.json)
 .then (data => {
     console.log(data);
@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const trainInfoElement = document.getElementById("train-info");
 
     // Replace with the URL of your train information API
-    const api_Url = `http://localhost:3000/trains/`;
+    const api_Url = `https://trains-project.onrender.com/trains/`;
 
     // Function to fetch and display train information
     function fetchAndDisplayTrainInfo() {
