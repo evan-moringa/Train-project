@@ -116,7 +116,21 @@ document.addEventListener("DOMContentLoaded", function () {
     loadDataButton.addEventListener("click", fetchAndDisplayTrainInfo);
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    const trainInfoElement = document.getElementById("train-info");
+    const loadDataButton = document.getElementById("load-data-button");
+    const bookTicketsButton = document.getElementById("book-tickets-button");
 
+
+    // Function to handle the "Book Tickets" button click
+    function bookTickets() {
+        // Implement the ticket booking logic here
+        alert("Tickets have been booked ");
+    }
+
+    // Add a click event listener to the "Book Tickets" button
+    bookTicketsButton.addEventListener("click", bookTickets);
+})
 
 
 
