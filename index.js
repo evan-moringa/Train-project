@@ -73,57 +73,7 @@ document.addEventListener("DOMContentLoaded", function () {
         alert("Tickets have been booked ");
     }
 
-    // Add a click event listener to the "Book Tickets" button
-    bookTicketsButton.addEventListener("click", bookTickets);
-
-document.addEventListener("DOMContentLoaded", function () {
-    const addTrainForm = document.getElementById("add-train-form");
-    const trainNameInput = document.getElementById("train-name");
-    const departureTimeInput = document.getElementById("departure-time");
-    const arrivalTimeInput = document.getElementById("arrival-time");
-    const trainList = document.getElementById("train-list");
-    const imageUrlInput = document.getElementById("image-url");
-
-});
-function addTrainToList(trainData) {
-    const listItem = document.createElement("li");
-    listItem.innerHTML = `
-        <img src="${trainData.imageUrl}" alt="${trainData.trainName}">
-        <span>${trainData.trainName} (Departure: ${trainData.departureTime}, Arrival: ${trainData.arrivalTime})</span>
-        <button class="delete-button">Delete</button>
-    `;
-
-    const deleteButton = listItem.querySelector(".delete-button");
-    deleteButton.addEventListener("click", function () {
-        // Implement delete logic here
-        // You can use an API to delete the train
-        listItem.remove();
-    });
-
-    trainList.appendChild(listItem);
 
 
-// Add a new train when the form is submitted
-addTrainForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const trainData = {
-        trainName: trainNameInput.value,
-        departureTime: departureTimeInput.value,
-        arrivalTime: arrivalTimeInput.value,
-        imageUrl: imageUrlInput.value
-    };
-
-    // You can use an API to post the train data
-    // Simulate adding to the list for demonstration purposes
-    addTrainToList(trainData);
-
-    // Clear form inputs
-    trainNameInput.value = "";
-    departureTimeInput.value = "";
-    arrivalTimeInput.value = "";
-    imageUrlInput.value = "";
-});
-}
     
 
