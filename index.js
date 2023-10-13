@@ -61,7 +61,40 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchAndDisplayTrainInfo(api_Url);
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    const bookingForm = document.getElementById("ticket-booking-form");
+    const availableTicketsElement = document.getElementById("available-tickets");
 
+    let availableTickets = 100; // The initial number of available tickets
+
+    // Function to update available tickets and display the count
+    function updateAvailableTickets() {
+        availableTicketsElement.textContent = availableTickets;
+    }
+
+    // Event handler for form submission
+    bookingForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const passengerName = document.getElementById("passenger-name").value;
+        const numTickets = parseInt(document.getElementById("num-tickets").value, 10);
+
+        if (numTickets > 0 && numTickets <= availableTickets) {
+            availableTickets -= numTickets;
+
+            // Update the available ticket count
+            updateAvailableTickets();
+
+            // Show a success message or perform other actions (e.g., display a confirmation modal).
+            alert(`Tickets booked successfully for ${passengerName}!`);
+        } else {
+            alert("Invalid number of tickets or not enough tickets available.");
+        }
+    });
+
+    // Initialize and display the available ticket count
+    updateAvailableTickets();
+});
 
 
 
