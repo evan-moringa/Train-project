@@ -1,8 +1,8 @@
 fetch(`http://localhost:3000/trains/`)
 .then (res => res.json)
-.then (api_Url => {
-    console.log(api_Url);
-    fetchAndDisplayTrainInfo(api_Url);
+.then (data => {
+    console.log(data);
+    fetchAndDisplayTrainInfo(data);
 })
 
 
