@@ -66,11 +66,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const loadDataButton = document.getElementById("load-data-button");
 
     // Replace with the URL of your train information API
-    const apiUrl = `http://localhost:3000/trains/`;
+    const api_Url = `http://localhost:3000/trains/`;
 
     // Function to fetch and display train information
-    function fetchAndDisplayTrainInfo(apiUrl) {
-        fetch(apiUrl)
+    function fetchAndDisplayTrainInfo(api_Url) {
+        fetch(api_Url)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Network response was not ok");
