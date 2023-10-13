@@ -3,9 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="index.js"></script>
-
-    <!-- Bootstrap CSS -->
+   <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" integrity="sha384-nU14brUcp6StFntEOOEBvcJm4huWjB0OcIeQ3fltAfSmuZFrkAif0T+UtNGlKKQv" crossorigin="anonymous">
     <link rel="stylesheet" href="index.css">
     <title>Railway tracking and arrival system</title>
@@ -69,7 +67,19 @@
       </div>
     </div>
     
-</div>
+
+    <h3>Search for more trains below:</h3>
+    <h5>Add Train Information</h5>
+    <form id="add-train-form">
+        <input type="text" placeholder="Train Name" id="train-name">
+        <input type="text" placeholder="Departure Time" id="departure-time">
+        <input type="text" placeholder="Arrival Time" id="arrival-time">
+        <input type="text" placeholder="Image URL" id="image-url">
+        <button type="submit">Add Train</button>
+    </form>
+
+
+
 
     <footer>
         <div class="row1">
@@ -101,6 +111,7 @@
         </div>
         </div>
     </footer>
+    <script src="index.js"></script>
   </body>
 </html>
 
