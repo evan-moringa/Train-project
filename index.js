@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // Function to handle the "Book Tickets" button click
-    function bookTickets(data) {
+    function bookTickets() {
         // Implement the ticket booking logic here
         alert("Tickets have been booked ");
     }
