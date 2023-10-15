@@ -57,9 +57,49 @@ document.addEventListener("DOMContentLoaded", function () {
         
     }
 
-    // Initial data load when the page loads
+    
     fetchAndDisplayTrainInfo(api_Url);
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const trainInfoElement = document.getElementById("train-info");
+    const getTrainInfoButton = document.getElementById("get-train-info-button");
+
+    
+    const apiUrl = "https://trains-project.onrender.com/train-info";
+
+    // Function to fetch and display specific train information
+    function fetchAndDisplaySpecificTrainInfo() {
+        
+        // Replace with the specific train ID or other criteria
+        const specificTrainId = "123";
+
+        fetch(`${apiUrl}/${specificTrainId}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+                return response.json();
+            })
+            .then((data) => {
+                // Display the specific train information
+                trainInfoElement.innerHTML = `
+                    <h2>Train Information</h2>
+                    <p>Train Name: ${data.train_name}</p>
+                    <p>Departure Time: ${data.departure_time}</p>
+                    <p>Arrival Time: ${data.arrival_time}</p>
+                `;
+            })
+            .catch((error) => {
+                console.error("Error fetching train data:", error);
+                trainInfoElement.textContent = "Error fetching train data.";
+            });
+    }
+
+    // Add a click event listener to the button
+    getTrainInfoButton.addEventListener("click", fetchAndDisplaySpecificTrainInfo);
+});
+
 
 document.addEventListener("DOMContentLoaded", function () {
     const bookingForm = document.getElementById("ticket-booking-form");
