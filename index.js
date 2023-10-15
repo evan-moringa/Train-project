@@ -66,11 +66,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const getTrainInfoButton = document.getElementById("get-train-info-button");
 
     
-    const apiUrl = "https://trains-project.onrender.com/train-info";
+    const apiUrl = "https://trains-project.onrender.com/trains/";
 
     // Function to fetch and display specific train information
     function fetchAndDisplaySpecificTrainInfo() {
-        
+
         // Replace with the specific train ID or other criteria
         const specificTrainId = "123";
 
