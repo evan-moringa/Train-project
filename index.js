@@ -5,76 +5,19 @@ fetch(`https://trains-project.onrender.com/trains/`)
     
 })
 
-
 document.addEventListener("DOMContentLoaded", function () {
     const trainInfoElement = document.getElementById("train-info");
-
-    // Replace with the URL of your train information API
-    const api_Url = `https://trains-project.onrender.com/trains/`;
-
-    // Function to fetch and display train information
-    function fetchAndDisplayTrainInfo() {
-        fetch(api_Url)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Network response was not ok");
-                }
-                return response.json();
-            })
-            .then((data) => {
-                const trainData = data.trains;
-
-                if (trainData.length === 0) {
-                    trainInfoElement.innerHTML = "No train information available.";
-                } else {
-                    trainInfoElement.innerHTML = ""; // Clear previous data
-
-                    trainData.forEach((train) => {
-                        const trainDiv = document.createElement("div");
-                        trainDiv.className = "train-info";
-
-                        const trainImage = document.createElement("img");
-                        trainImage.src = train.image_url; // Replace with the actual image URL
-
-                        const trainName = document.createElement("h2");
-                        trainName.textContent = `Train: ${train.train_name}`;
-
-                        const departureTime = document.createElement("p");
-                        departureTime.textContent = `Departure Time: ${train.departure_time}`;
-
-                        const arrivalTime = document.createElement("p");
-                        arrivalTime.textContent = `Arrival Time: ${train.arrival_time}`;
-
-                        trainDiv.appendChild(trainImage);
-                        trainDiv.appendChild(trainName);
-                        trainDiv.appendChild(departureTime);
-                        trainDiv.appendChild(arrivalTime);
-
-                        trainInfoElement.appendChild(trainDiv);
-                    });
-                }
-            })
-        
-    }
-
-    
-    fetchAndDisplayTrainInfo(api_Url);
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-    const trainInfoElement = document.getElementById("train-info");
+    const selectTrainElement = document.getElementById("select-train");
     const getTrainInfoButton = document.getElementById("get-train-info-button");
 
-    
+    // Replace with the URL of your train information API
     const apiUrl = "https://trains-project.onrender.com/trains/";
 
-    // Function to fetch and display specific train information
-    function fetchAndDisplaySpecificTrainInfo() {
+    // Function to fetch and display train information for the selected train
+    function fetchAndDisplaySelectedTrainInfo() {
+        const selectedTrainId = selectTrainElement.value;
 
-        // Replace with the specific train ID or other criteria
-        const specificTrainId = "123";
-
-        fetch(`${apiUrl}/${specificTrainId}`)
+        fetch(`${apiUrl}/${selectedTrainId}`)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Network response was not ok");
@@ -82,13 +25,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 return response.json();
             })
             .then((data) => {
-                // Display the specific train information
-                trainInfoElement.innerHTML = `
-                    <h2>Train Information</h2>
-                    <p>Train Name: ${data.train_name}</p>
-                    <p>Departure Time: ${data.departure_time}</p>
-                    <p>Arrival Time: ${data.arrival_time}</p>
-                `;
+                // Display the selected train arrival and departure times
+                const arrivalTime = data.arrival_time;
+                const departureTime = data.departure_time;
+
+                alert(`Selected Train Information:\nArrival Time: ${arrivalTime}\nDeparture Time: ${departureTime}`);
             })
             .catch((error) => {
                 console.error("Error fetching train data:", error);
@@ -97,8 +38,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Add a click event listener to the button
-    getTrainInfoButton.addEventListener("click", fetchAndDisplaySpecificTrainInfo);
+    getTrainInfoButton.addEventListener("click", fetchAndDisplaySelectedTrainInfo);
 });
+
+
 
 
 document.addEventListener("DOMContentLoaded", function () {
