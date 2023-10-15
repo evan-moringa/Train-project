@@ -34,3 +34,8 @@ h4{
     background-color:gray;
 }
 
+.button-train-info{
+    background-color: #333;
+    color: whitesmoke;
+    padding: 6px;
+}
