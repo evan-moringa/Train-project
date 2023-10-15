@@ -2,7 +2,7 @@ fetch(`https://trains-project.onrender.com/trains/`)
 .then (res => res.json)
 .then (data => {
     console.log(data);
-    fetchAndDisplayTrainInfo(data);
+    
 })
 
 
