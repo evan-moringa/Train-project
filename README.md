@@ -15,8 +15,7 @@
 
 
 ## Known Bugs
-  - Order tickets at the bottom will send you back up the page in some situations,to avoid that press the book tickets button then fill the empty fields then press enter.
-
+  - Train arrival and departure times wont be visible
 ## Technologies used
     - JS
     - HTML and CSS
