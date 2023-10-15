@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const arrivalTime = data.arrival_time;
                 const departureTime = data.departure_time;
 
-                alert(`Selected Train Information:\nArrival Time: ${arrivalTime}\nDeparture Time: ${departureTime}`);
+                alert(`Selected Train Information:Arrival Time: ${arrivalTime} Departure Time: ${departureTime}`);
             })
             .catch((error) => {
                 console.error("Error fetching train data:", error);

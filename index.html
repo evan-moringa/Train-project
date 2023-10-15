@@ -29,7 +29,7 @@
           <div class="card-body">
             <h5 class="card-title">Express train</h5>
             <p class="card-text">This is our express train</p>
-            <p class="card-text"><small class="text-body-secondary">Click the button at ticket bookings below to access timings</small></p>
+            <p class="card-text"><small class="text-body-secondary">Click the button below to access timings</small></p>
            
     
           </div>
@@ -40,7 +40,7 @@
           <div class="card-body">
             <h5 class="card-title">Local train</h5>
             <p class="card-text">This is our local train</p>
-            <p class="card-text"><small class="text-body-secondary">Click the button at ticket bookings below to access timings</small></p>
+            <p class="card-text"><small class="text-body-secondary">Click the button below to access timings</small></p>
           
            
           </div>
@@ -51,7 +51,7 @@
           <div class="card-body">
             <h5 class="card-title">Bullet train</h5>
             <p class="card-text">This is our bullet train</p>
-            <p class="card-text"><small class="text-body-secondary">Click the button at ticket bookings below to access timings</small></p>
+            <p class="card-text"><small class="text-body-secondary">Click the button below to access timings</small></p>
            
              
           </div>
@@ -60,13 +60,27 @@
          
       </div>
   </div>
- </div>
+
+  <div id="button-train-info">
+    <label for="select-train">Select a Train:</label>
+    <select id="select-train">
+      <option value="train-1">Express train</option>
+      <option value="train-2">Local train</option>
+      <option value="train-3">Bullet train</option>
+      <button id="get-train-info-button">Get Train Information</button>
+  </select>
   
 
+  </div>
+  
+  
+  
+  
+  
   
   
   <!--Ticket booking-->
-    <h4>Train Ticket Booking</h4>
+    <h5>Train Ticket Booking</h5>
     <form id="ticket-booking-form">
         <label for="passenger-name">Passenger Name:</label>
         <input type="text" id="passenger-name" required>
@@ -76,14 +90,6 @@
         <p>Available Tickets: <span id="available-tickets">100</span></p>
        
     </form>
-    <div id="button-train-info">
-      <label for="select-train">Select a Train:</label>
-      <select id="select-train">
-        <option value="train-1">Express train</option>
-        <option value="train-2">Local train</option>
-        <option value="train-3">Bullet train</option>
-        <button id="get-train-info-button">Get Train Information</button>
-    </select>
     
     <!--Footer of the page-->
     <footer>
