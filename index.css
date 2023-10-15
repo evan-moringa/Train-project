@@ -29,12 +29,8 @@ h4{
     
 }
 
-.row1{
-    color: aliceblue;
-    background-color:gray;
-}
 
-.button-train-info{
+#button-train-info{
     background-color: #333;
     color: whitesmoke;
     padding: 6px;
