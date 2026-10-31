@@ -2,209 +2,242 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Live Railway Tracking & Booking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Live Transit - Turku</title>
   
-  <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  
-  <!-- Leaflet CSS for the Map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- MapLibre GL CSS -->
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <!-- Google Fonts for modern typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   
   <style>
-    /* Custom Styling to polish the layout */
-    body {
-      background-color: #f8f9fa;
+    /* Reset and Layout */
+    * { box-sizing: border-box; }
+    body, html { 
+      margin: 0; 
+      padding: 0; 
+      width: 100%; 
+      height: 100%; 
+      font-family: 'Inter', sans-serif; 
+      overflow: hidden; 
+      background-color: #1a1a1a;
     }
-    #map {
-      height: 400px;
-      width: 100%;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    
+    #map { 
+      width: 100%; 
+      height: 100%; 
     }
-    .card-img-top {
-      height: 200px;
-      object-fit: cover;
+
+    /* Floating UI Container */
+    .floating-ui {
+      position: absolute;
+      z-index: 1000;
+      pointer-events: none; /* Let clicks pass through to the map */
     }
-    .booking-section {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    .pointer-events-auto {
+      pointer-events: auto;
     }
+
+    /* Top Bar Layout */
+    .top-bar {
+      top: 40px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    /* Brand Logo */
+    .brand-logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: white;
+      margin: 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .brand-dot { color: #F5A623; }
+
+    /* Live Badge */
+    .live-badge {
+      background: rgba(30, 30, 30, 0.7);
+      backdrop-filter: blur(12px);
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: white;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      background: #00E676;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #00E676;
+    }
+
+    /* Dropdown Header */
+    .city-dropdown {
+      background: rgba(30, 30, 30, 0.7);
+      backdrop-filter: blur(12px);
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: white;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Right Side Tools */
+    .side-tools {
+      right: 20px;
+      top: 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .tool-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(30, 30, 30, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    /* Bottom Navigation Pill */
+    .bottom-nav {
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      background: #f8f9fa;
+      padding: 6px;
+      border-radius: 30px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+      gap: 4px;
+    }
+    .nav-item {
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-weight: 600;
+      font-size: 15px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: background 0.2s;
+    }
+    .nav-item.active {
+      background: #FFD600; /* High contrast yellow */
+      color: black;
+    }
+
+    /* Map Route Markers */
+    .route-marker {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 14px;
+      border: 2px solid white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      cursor: pointer;
+    }
+    .marker-yellow { background-color: #F5A623; color: black; }
+    .marker-purple { background-color: #9B51E0; color: white; }
+    .marker-green { background-color: #27AE60; color: white; }
   </style>
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-    <div class="container">
-      <a class="navbar-brand d-flex align-items-center" href="#">
-        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH0AAAB9CAMAAAC4XpwXAAAAY1BMVEUAgsr///8AgMkAd8bG3O8AeccAfchandVKlNDL3vDs9PpSltIjiMwAe8fL2+40is3j7/j2+v2yzumKtN6NuN8AccRCkM9no9eBtN6XveJ9r9xwq9rA1+0rjc7b6PSnyeeiwuQstlvJAAAGZklEQVRogd2ba3erKhCGEQL1RqM26o5Rk///K7cXNF4YBm08nnPeL23XojwqMAwzA3G2K67L5F7kbhUSQsLKzYt7Utbxjp7IVnBSVERIKQWllLRqfvZ/V0Wy9RG20H3vkVEuFHWp5iEYzR4X/wh6XD5CJvTgySMIFj5K6y9gSY9uFEePD0Bv0QfpZZBaoocHSN3yQ/TyKreg1QPIqwUfpV8Cvp3d8Xlw+SU9yneye36OjL+Z/mJiN7uVYPfddC/kv2K3kqG3j37bMdnWovK2g+678gPsVtIFzR9E9+jvRnwqQaGvD9Cfv5jqa1H23EIv2AfZrVhhT88/NeRvydySHh8Ab/GanW9NPwaux6/pBji1kQGP00E4lSwMvjAFIQON1Bq/pBcAvNmxnr6NzxL7T3BXlMuZv6A/gaUmqJW3oFRCpmq57ud0D4JXK2NZ/nlr9WR+BeHnVm9G9yF3tVp985yJt9hqQOMKcnxnrzGju/onpnTlJETprEW6bgC8iHAh+g2YcXLtIiyGiK23kTvU2XTDndA9aK3J9VxH392Jwd4mTzqhh8A6oY9V1+24y3HY5XrcGz2g7kId/QW5UfKl6dtJft5KdA1e0Mvzd38jPQI3Vb5lqb9Vgk4hG8dppOegL8NQt1yrC/g6YhyogX6B3dcJ3XsEZj08CzrhlwU9gPemkR43JgbZ4BrDE+N0Gszp8CBN6IHNxi8DnD5OJUW/GpzIgQ7tQMvmT5xOr1N6aXqrge5ant9dnE5kOaEbO1Z0/2oFJ+Tq43T1iB19YTchuuW729CVbe7oN+O55RC6uA302OAKHkWnNFb00jyZD6ETVir6w3xgPIYuHj3dh7bWQ+k09Ds65EoeS+/8IYJ++KPo7acnTpwhvR5Ep1nc0Gus08HSYk859mphadt2tG7oCRaYGuiQy7vQ4LRidMKShv4HC9AM9JjYvDwlsSVdFA0dOHWs6U4UcvT8zMPBaUPptHIIYmbJzLO6B6FZwfvggdNJTGo0Mjb1KmPfrMm5A6UTUROjY7GibxBOlyVJTqQnBDrt/RP0Oyk2jftH6aIgObqID6PTnOCe6nF0l6DG5kB6RUKszXF0C/aRdBv9f+nnjvu5c/7c9X6urTvXzm/Z4+oiz7WxOaUkz4vant7scRv291sqGsdNQJlFnzZun0hv9vRkg2+T9N3No8wTqQg3S6zp5Qa/bjhNpLUWXqsAiFXcpn+P2t6njYajLtenNZ/qVEKVT23l01r78+NBm+snXjLS7c5xnT/voEtuCO0NkdxUP+189eWHKKwpANk3bM8ySNzkHSGPukwTBYsZ7qz9OGJIo4AR8vGtEpszLB1CynUmOQ/hSoo74Vxmw5zEjGh/hkXP75PMiJcYy6iiSzLGqMHMyEjvzu9o7EKXFcKF2tA+doHGbRq8foWbVONGzLOKWbUfaUvZWisfHc4hZoV/eiIyy6IxpSjDu1TxOnzNtVVjpr1tqcSiYGWMVTqosW1bX1927x+9rgzvj1LHsYpRD5IsJaJfUf4yZkH6ieEJkjKr4NI7Ro3E5yfiavPO5SJcM5QV/NhWZk3i8xZJD8o45+za251XypdKe3McV107vLtJbsKcl+lbl9+N1Mh/66RGvf21RN9mlpcx5qTIEMu3V4zZ+FlOCtsON9ORwOIiH2fKRXb4L89TG4h/8fQaNqDm1y+kt0Uu0pSH7f+Bpz/qOdlqyvViX32DnxQrUFvlYQ05aIVXzqIhIzlkIbE5t85BG/LvfYGT8mTr5UqfrXrVJjWXPGny72Dtgay6EiZl5x/GOidVI5F0f1TAMtbVHkB1F0JXdWEn/d6pr7tojLQOz7530791g0mFvuZEn3wQ2qJAK2knMlRvA9QaCeJm6glemYspU4OaZy7R9gbWGgF1Vs25Vc1lhqYmKGWqLQf6guusHE8772lfYYa73l3jrDPKQP6MG2rMIFvSr+NNOSm9T2uurwNqC6nb2IfEtrhYNIhIa++w2kKgrpLKoLKvJ+fhl7a2Eq+rhMo6bRxPpDG3qCk9uZ723Fpi8OP/Eq4D/QtryE+un2+sntZK79PmuwPdvYnPvD7dcW/CaU93H7kzIvbcGXE+c1+G770v43zirpC2HtWSfu49KefcO2Ktzrwf1/FPvBvYKrqR0+5FdurvhGIH8+5OqHWf/5H7sL1OvAv8foRP3YP+C22YZgtlG+dLAAAAAElFTkSuQmCC" alt="Logo" width="30" class="me-2 rounded">
-        Live Train Tracking System
-      </a>
-    </div>
-  </nav>
+  <!-- Map Container -->
+  <div id="map"></div>
 
-  <div class="container">
+  <!-- Floating UI Overlay -->
+  <div class="floating-ui top-bar">
+    <div>
+      <h1 class="brand-logo pointer-events-auto">kulku<span class="brand-dot">.</span></h1>
+      <div class="live-badge pointer-events-auto">
+        <span class="live-dot"></span> 116 live
+      </div>
+    </div>
     
-    <!-- Live Map Section -->
-    <div class="row mb-5">
-      <div class="col-12">
-        <h4 class="mb-3">Real-Time Train Locations</h4>
-        <div id="map"></div>
-      </div>
-    </div>
-
-    <!-- Train Information Cards -->
-    <div class="row mb-5">
-      <div class="col-12">
-        <h4 class="mb-3">Available Fleet</h4>
-      </div>
-      <div class="col-md-4 mb-3">
-        <div class="card h-100 shadow-sm">
-          <img src="https://www.financialexpress.com/wp-content/uploads/2023/06/vande-bharat-express.jpg" class="card-img-top" alt="Express Train">
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title">Express Train</h5>
-            <p class="card-text text-muted">High-speed intercity connections.</p>
-            <button class="btn btn-outline-primary mt-auto w-100">View Schedule</button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4 mb-3">
-        <div class="card h-100 shadow-sm">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b4/Western-Railway-Medha-EMU.jpg" class="card-img-top" alt="Local Train">
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title">Local Train</h5>
-            <p class="card-text text-muted">Frequent stops for commuter transit.</p>
-            <button class="btn btn-outline-primary mt-auto w-100">View Schedule</button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4 mb-3">
-        <div class="card h-100 shadow-sm">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/JRE-TEC-E5_omiya.JPG/1200px-JRE-TEC-E5_omiya.JPG" class="card-img-top" alt="Bullet Train">
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title">Bullet Train</h5>
-            <p class="card-text text-muted">Ultra high-speed premium travel.</p>
-            <button class="btn btn-outline-primary mt-auto w-100">View Schedule</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Ticket Booking Section -->
-    <div class="row mb-5 justify-content-center">
-      <div class="col-md-8">
-        <div class="booking-section">
-          <h4 class="mb-4">Book Your Ticket</h4>
-          <form id="ticket-booking-form">
-            <div class="mb-3">
-              <label for="select-train" class="form-label">Select a Train Type</label>
-              <select class="form-select" id="select-train" required>
-                <option value="" selected disabled>Choose...</option>
-                <option value="express">Express train</option>
-                <option value="local">Local train</option>
-                <option value="bullet">Bullet train</option>
-              </select>
-            </div>
-            
-            <div class="mb-3">
-              <label for="passenger-name" class="form-label">Passenger Name</label>
-              <input type="text" class="form-control" id="passenger-name" placeholder="Enter full name" required>
-            </div>
-            
-            <div class="mb-3">
-              <label for="num-tickets" class="form-label">Number of Tickets</label>
-              <input type="number" class="form-control" id="num-tickets" value="1" min="1" max="100" required>
-            </div>
-            
-            <div class="d-flex justify-content-between align-items-center mt-4">
-              <span class="text-success fw-bold">Available Tickets: <span id="available-tickets">100</span></span>
-              <button type="submit" class="btn btn-primary px-4">Confirm Booking</button>
-            </div>
-          </form>
-        </div>
-      </div>
+    <div class="city-dropdown pointer-events-auto">
+      Turku Föli <span>▼</span>
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="bg-dark text-white text-center py-3 mt-auto">
-    <div class="container">
-      <small>&copy; 2026 Train Timings App By Evan</small>
-    </div>
-  </footer>
+  <div class="floating-ui side-tools pointer-events-auto">
+    <button class="tool-btn">⚙️</button>
+    <button class="tool-btn">2D</button>
+    <button class="tool-btn">⌖</button>
+  </div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div class="floating-ui bottom-nav pointer-events-auto">
+    <button class="nav-item">⏱ Now</button>
+    <button class="nav-item active">🗺 Map</button>
+    <button class="nav-item">⚲ Go</button>
+  </div>
+
+  <!-- MapLibre GL JS -->
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <script>
-    // 1. Initialize the Map (Centered on Turku)
-    const map = L.map('map').setView([60.4518, 22.2666], 12);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Custom Train Icon
-    const trainIcon = L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16]
+    // 1. Initialize 3D Vector Map centered on Turku
+    const map = new maplibregl.Map({
+      container: 'map',
+      // Dark Matter vector style from Carto (Free, no token required for testing)
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [22.2666, 60.4518], // Longitude, Latitude for Turku
+      zoom: 15.5,
+      pitch: 60,    // Tilt for 3D perspective
+      bearing: -15, // Rotate camera slightly
+      antialias: true
     });
 
-    // 2. Setup Mock Live Tracking Data around the city
-    const mockTrains = [
-      { id: 'EXP-101', lat: 60.4550, lng: 22.2600, speed: 85, type: 'Express' },
-      { id: 'LOC-204', lat: 60.4400, lng: 22.2800, speed: 45, type: 'Local' },
-      { id: 'BUL-909', lat: 60.4600, lng: 22.2300, speed: 120, type: 'Bullet' }
+    // 2. Add Mock Vehicles using HTML markers
+    const mockVehicles = [
+      { id: '9A', type: 'purple', coords: [22.2630, 60.4530] },
+      { id: '9',  type: 'purple', coords: [22.2635, 60.4525] },
+      { id: '20', type: 'yellow', coords: [22.2700, 60.4550] },
+      { id: '4',  type: 'green',  coords: [22.2680, 60.4510] },
+      { id: '25', type: 'yellow', coords: [22.2720, 60.4490] }
     ];
 
-    const markers = {};
+    mockVehicles.forEach(vehicle => {
+      // Create HTML element for the marker
+      const el = document.createElement('div');
+      el.className = `route-marker marker-${vehicle.type}`;
+      el.textContent = vehicle.id;
 
-    // Initial marker placement
-    mockTrains.forEach(train => {
-      markers[train.id] = L.marker([train.lat, train.lng], { icon: trainIcon })
-        .bindPopup(`<b>${train.id} (${train.type})</b><br>Speed: ${train.speed} km/h`)
+      // Add marker to map
+      new maplibregl.Marker({ element: el })
+        .setLngLat(vehicle.coords)
         .addTo(map);
     });
 
-    // Simulate movement every 2 seconds
-    setInterval(() => {
-      mockTrains.forEach(train => {
-        // Randomly shift latitude and longitude slightly to simulate movement
-        train.lat += (Math.random() - 0.5) * 0.002;
-        train.lng += (Math.random() - 0.5) * 0.002;
-        
-        // Update marker position
-        markers[train.id].setLatLng([train.lat, train.lng]);
-      });
-    }, 2000);
-
-    // 3. Simple Booking Form Logic
-    const bookingForm = document.getElementById('ticket-booking-form');
-    let availableTickets = 100;
-    const ticketDisplay = document.getElementById('available-tickets');
-
-    bookingForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const numRequested = parseInt(document.getElementById('num-tickets').value);
-      
-      if (numRequested <= availableTickets) {
-        availableTickets -= numRequested;
-        ticketDisplay.textContent = availableTickets;
-        alert(`Successfully booked ${numRequested} ticket(s)!`);
-        bookingForm.reset();
-      } else {
-        alert("Not enough tickets available!");
-      }
+    // Optional: Add basic 3D buildings layer if supported by the tile source
+    map.on('load', () => {
+      // Note: Full 3D extruded buildings require a tile source with building heights 
+      // (like OpenMapTiles or Mapbox Streets). Carto Dark Matter provides a 2.5D baseline.
     });
   </script>
 </body>
 </html>
-
-  
- 
