@@ -1,17 +1,79 @@
 document.addEventListener("DOMContentLoaded", () => {
     
-    // ==========================================
-    // 1. LIVE MAP & DIGITRAFFIC INTEGRATION
-    // ==========================================
+    // 1. Initialize Map (Zoomed out for regional trains)
     const map = new maplibregl.Map({
         container: 'map',
-        style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-        center: [22.2666, 60.4518], // Turku
-        zoom: 7,
+        style: 'https://tiles.openfreemap.org/styles/dark',
+        center: [22.2666, 60.4518], // Centered near Turku, but zoomed out to see more of Finland
+        zoom: 7.5, 
         pitch: 45,
-        bearing: 0
+        bearing: 0,
+        antialias: true 
     });
 
+    let is3D = true;
+
+    // 2. Add 3D Buildings (visible when users manually zoom in closer to cities)
+    map.on('load', () => {
+        const layers = map.getStyle().layers;
+        let labelLayerId;
+        for (let i = 0; i < layers.length; i++) {
+            if (layers[i].type === 'symbol' && layers[i].layout['text-field']) {
+                labelLayerId = layers[i].id;
+                break;
+            }
+        }
+
+        map.addLayer(
+            {
+                'id': '3d-buildings',
+                'source': 'openmaptiles', 
+                'source-layer': 'building',
+                'type': 'fill-extrusion',
+                'minzoom': 14, // Only render 3D buildings when zoomed into a city
+                'paint': {
+                    'fill-extrusion-color': '#2a2a2a', 
+                    'fill-extrusion-height': [
+                        'interpolate', ['linear'], ['zoom'],
+                        14, 0,
+                        15.05, ['get', 'height']
+                    ],
+                    'fill-extrusion-base': [
+                        'interpolate', ['linear'], ['zoom'],
+                        14, 0,
+                        15.05, ['get', 'min_height']
+                    ],
+                    'fill-extrusion-opacity': 0.8 
+                }
+            },
+            labelLayerId
+        );
+    });
+
+    // 3. 2D / 3D Toggle Button
+    const toggleViewBtn = document.querySelector('.toggle-3d-btn');
+
+    if (toggleViewBtn) {
+        toggleViewBtn.addEventListener('click', () => {
+            is3D = !is3D;
+            
+            if (is3D) {
+                toggleViewBtn.textContent = '2D'; 
+                map.easeTo({ pitch: 45, duration: 1000 });
+                if (map.getLayer('3d-buildings')) {
+                    map.setLayoutProperty('3d-buildings', 'visibility', 'visible');
+                }
+            } else {
+                toggleViewBtn.textContent = '3D'; 
+                map.easeTo({ pitch: 0, duration: 1000 }); // Flatten camera
+                if (map.getLayer('3d-buildings')) {
+                    map.setLayoutProperty('3d-buildings', 'visibility', 'none');
+                }
+            }
+        });
+    }
+
+    // 4. Live Digitraffic Tracking
     const trainMarkers = {};
 
     async function fetchLiveTrains() {
@@ -21,19 +83,27 @@ document.addEventListener("DOMContentLoaded", () => {
             
             const liveBadge = document.querySelector('.live-badge');
             if (liveBadge) {
-                liveBadge.innerHTML = `<span class="live-dot"></span> ${trains.length} live`;
+                liveBadge.innerHTML = `<span class="live-dot"></span> ${trains.length} live trains`;
             }
 
             trains.forEach(train => {
                 const trainId = train.trainNumber;
+                
+                // Format label based on API data (e.g., "Commuter 123" or "IC 45")
+                const trainPrefix = train.trainCategory === 'Commuter' ? 'Commuter' : (train.trainType || '');
+                const trainLabel = `${trainPrefix} ${trainId}`.trim();
+                
                 const coords = train.location.coordinates;
                 
                 if (trainMarkers[trainId]) {
+                    // Move marker and update label if it already exists
                     trainMarkers[trainId].setLngLat(coords);
+                    trainMarkers[trainId].getElement().textContent = trainLabel;
                 } else {
+                    // Create new marker
                     const el = document.createElement('div');
-                    el.className = 'route-marker marker-green';
-                    el.textContent = trainId;
+                    el.className = 'route-marker';
+                    el.textContent = trainLabel;
 
                     const marker = new maplibregl.Marker({ element: el })
                         .setLngLat(coords)
@@ -46,78 +116,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Fetch immediately, then poll every 5 seconds
     fetchLiveTrains();
-    setInterval(fetchLiveTrains, 5000); // Poll every 5 seconds
+    setInterval(fetchLiveTrains, 5000);
 
-
-    // ==========================================
-    // 2. RENDER API: TRAIN INFO FETCHING
-    // ==========================================
-    const apiUrl = "https://trains-project.onrender.com/trains";
-    
-    // Initial console check
-    fetch(apiUrl)
-        .then(res => res.json())
-        .then(data => console.log("Render API Data:", data))
-        .catch(err => console.error("Render API Error:", err));
-
-    const selectTrainElement = document.getElementById("select-train");
-    const getTrainInfoButton = document.getElementById("get-train-info-button");
-
-    if (getTrainInfoButton) {
-        getTrainInfoButton.addEventListener("click", () => {
-            const selectedTrainId = selectTrainElement.value;
-
-            fetch(`${apiUrl}/${selectedTrainId}`)
-                .then(response => {
-                    if (!response.ok) throw new Error("Network response was not ok");
-                    return response.json();
-                })
-                .then(data => {
-                    alert(`Selected Train Information:\nArrival Time: ${data.arrival_time}\nDeparture Time: ${data.departure_time}`);
-                })
-                .catch(error => {
-                    console.error("Error fetching train data:", error);
-                    alert("Error fetching train data.");
-                });
-        });
-    }
-
-
-    // ==========================================
-    // 3. TICKET BOOKING LOGIC
-    // ==========================================
-    const bookingForm = document.getElementById("ticket-booking-form");
-    const availableTicketsElement = document.getElementById("available-tickets");
-    let availableTickets = 100; 
-
-    function updateAvailableTickets() {
-        if (availableTicketsElement) {
-            availableTicketsElement.textContent = availableTickets;
-        }
-    }
-
-    if (bookingForm) {
-        bookingForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-
-            const passengerName = document.getElementById("passenger-name").value;
-            const numTickets = parseInt(document.getElementById("num-tickets").value, 10);
-
-            if (numTickets > 0 && numTickets <= availableTickets) {
-                availableTickets -= numTickets;
-                updateAvailableTickets();
-                
-                alert(`Tickets booked successfully for ${passengerName}!`);
-                bookingForm.reset(); // Clears inputs after successful booking
-            } else {
-                alert("Invalid number of tickets or not enough tickets available.");
-            }
-        });
-    }
-
-    updateAvailableTickets();
 });
-
-    
-

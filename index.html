@@ -3,167 +3,82 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Live Transit - Turku</title>
+  <title>RailTrack - Live Train Tracking</title>
   
   <!-- MapLibre GL CSS -->
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
-  <!-- Google Fonts for modern typography -->
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   
   <style>
     /* Reset and Layout */
     * { box-sizing: border-box; }
     body, html { 
-      margin: 0; 
-      padding: 0; 
-      width: 100%; 
-      height: 100%; 
-      font-family: 'Inter', sans-serif; 
-      overflow: hidden; 
-      background-color: #1a1a1a;
+      margin: 0; padding: 0; width: 100%; height: 100%; 
+      font-family: 'Inter', sans-serif; overflow: hidden; background-color: #1a1a1a;
     }
     
-    #map { 
-      width: 100%; 
-      height: 100%; 
-    }
+    #map { width: 100%; height: 100%; }
 
     /* Floating UI Container */
-    .floating-ui {
-      position: absolute;
-      z-index: 1000;
-      pointer-events: none; /* Let clicks pass through to the map */
-    }
-    .pointer-events-auto {
-      pointer-events: auto;
-    }
+    .floating-ui { position: absolute; z-index: 1000; pointer-events: none; }
+    .pointer-events-auto { pointer-events: auto; }
 
     /* Top Bar Layout */
-    .top-bar {
-      top: 40px;
-      left: 20px;
-      right: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
+    .top-bar { top: 40px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+    
     /* Brand Logo */
-    .brand-logo {
-      font-size: 28px;
-      font-weight: 800;
-      color: white;
-      margin: 0;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-    .brand-dot { color: #F5A623; }
+    .brand-logo { font-size: 28px; font-weight: 800; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .brand-dot { color: #00BFA5; } /* Teal Accent */
 
     /* Live Badge */
     .live-badge {
-      background: rgba(30, 30, 30, 0.7);
-      backdrop-filter: blur(12px);
-      padding: 8px 16px;
-      border-radius: 20px;
-      color: white;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 15px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); padding: 8px 16px; border-radius: 20px;
+      color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; margin-top: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    .live-dot {
-      width: 10px;
-      height: 10px;
-      background: #00E676;
-      border-radius: 50%;
-      box-shadow: 0 0 8px #00E676;
-    }
+    .live-dot { width: 10px; height: 10px; background: #00E676; border-radius: 50%; box-shadow: 0 0 8px #00E676; }
 
     /* Dropdown Header */
     .city-dropdown {
-      background: rgba(30, 30, 30, 0.7);
-      backdrop-filter: blur(12px);
-      padding: 8px 16px;
-      border-radius: 20px;
-      color: white;
-      font-weight: 600;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); padding: 8px 16px; border-radius: 20px;
+      color: white; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer;
     }
 
     /* Right Side Tools */
-    .side-tools {
-      right: 20px;
-      top: 120px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    .side-tools { right: 20px; top: 120px; display: flex; flex-direction: column; gap: 12px; }
     .tool-btn {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      background: rgba(30, 30, 30, 0.7);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      width: 48px; height: 48px; border-radius: 14px; background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1); color: white; display: flex; justify-content: center; align-items: center;
+      cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
     /* Bottom Navigation Pill */
     .bottom-nav {
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      background: #f8f9fa;
-      padding: 6px;
-      border-radius: 30px;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.4);
-      gap: 4px;
+      bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; background: #f8f9fa;
+      padding: 6px; border-radius: 30px; box-shadow: 0 12px 24px rgba(0,0,0,0.4); gap: 4px;
     }
     .nav-item {
-      padding: 12px 24px;
-      border-radius: 24px;
-      font-weight: 600;
-      font-size: 15px;
-      color: #333;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      transition: background 0.2s;
+      padding: 12px 24px; border-radius: 24px; font-weight: 600; font-size: 15px; color: #333;
+      border: none; background: transparent; cursor: pointer; transition: background 0.2s;
     }
-    .nav-item.active {
-      background: #FFD600; /* High contrast yellow */
-      color: black;
-    }
+    .nav-item.active { background: #FFD600; color: black; }
 
-    /* Map Route Markers */
+    /* Sleek Train Route Markers */
     .route-marker {
-      padding: 4px 8px;
-      border-radius: 6px;
+      background-color: #00BFA5; 
+      color: #1a1a1a;
+      padding: 6px 12px;
+      border-radius: 20px; /* Pill shape */
       font-weight: 800;
-      font-size: 14px;
+      font-size: 13px;
       border: 2px solid white;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      white-space: nowrap;
       cursor: pointer;
+      transition: transform 0.2s;
     }
-    .marker-yellow { background-color: #F5A623; color: black; }
-    .marker-purple { background-color: #9B51E0; color: white; }
-    .marker-green { background-color: #27AE60; color: white; }
+    .route-marker:hover { transform: scale(1.1); z-index: 10; }
   </style>
 </head>
 <body>
@@ -174,20 +89,15 @@
   <!-- Floating UI Overlay -->
   <div class="floating-ui top-bar">
     <div>
-      <h1 class="brand-logo pointer-events-auto">kulku<span class="brand-dot">.</span></h1>
-      <div class="live-badge pointer-events-auto">
-        <span class="live-dot"></span> 116 live
-      </div>
+      <h1 class="brand-logo pointer-events-auto">RailTrack<span class="brand-dot">.</span></h1>
+      <div class="live-badge pointer-events-auto"><span class="live-dot"></span> 0 live trains</div>
     </div>
-    
-    <div class="city-dropdown pointer-events-auto">
-      Turku Föli <span>▼</span>
-    </div>
+    <div class="city-dropdown pointer-events-auto">Finnish Railways (VR) <span>▼</span></div>
   </div>
 
   <div class="floating-ui side-tools pointer-events-auto">
     <button class="tool-btn">⚙️</button>
-    <button class="tool-btn">2D</button>
+    <button class="tool-btn toggle-3d-btn">2D</button>
     <button class="tool-btn">⌖</button>
   </div>
 
@@ -197,47 +107,7 @@
     <button class="nav-item">⚲ Go</button>
   </div>
 
-  <!-- MapLibre GL JS -->
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-  <script>
-    // 1. Initialize 3D Vector Map centered on Turku
-    const map = new maplibregl.Map({
-      container: 'map',
-      // Dark Matter vector style from Carto (Free, no token required for testing)
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [22.2666, 60.4518], // Longitude, Latitude for Turku
-      zoom: 15.5,
-      pitch: 60,    // Tilt for 3D perspective
-      bearing: -15, // Rotate camera slightly
-      antialias: true
-    });
-
-    // 2. Add Mock Vehicles using HTML markers
-    const mockVehicles = [
-      { id: '9A', type: 'purple', coords: [22.2630, 60.4530] },
-      { id: '9',  type: 'purple', coords: [22.2635, 60.4525] },
-      { id: '20', type: 'yellow', coords: [22.2700, 60.4550] },
-      { id: '4',  type: 'green',  coords: [22.2680, 60.4510] },
-      { id: '25', type: 'yellow', coords: [22.2720, 60.4490] }
-    ];
-
-    mockVehicles.forEach(vehicle => {
-      // Create HTML element for the marker
-      const el = document.createElement('div');
-      el.className = `route-marker marker-${vehicle.type}`;
-      el.textContent = vehicle.id;
-
-      // Add marker to map
-      new maplibregl.Marker({ element: el })
-        .setLngLat(vehicle.coords)
-        .addTo(map);
-    });
-
-    // Optional: Add basic 3D buildings layer if supported by the tile source
-    map.on('load', () => {
-      // Note: Full 3D extruded buildings require a tile source with building heights 
-      // (like OpenMapTiles or Mapbox Streets). Carto Dark Matter provides a 2.5D baseline.
-    });
-  </script>
+  <script src="index.js"></script>
 </body>
 </html>
