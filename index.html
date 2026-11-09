@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>RailTrack - Live Train Tracking</title>
   
-  <!-- MapLibre GL CSS -->
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
@@ -45,14 +42,14 @@
     
     <div class="route-input-group">
       <label>From</label>
-      <input type="text" class="route-input" placeholder="Current location">
+      <input type="text" class="route-input" id="route-from" placeholder="e.g. Turku">
     </div>
     
     <div style="text-align: center; margin-bottom: 12px; color: #888;">↑↓</div>
 
     <div class="route-input-group">
       <label>To</label>
-      <input type="text" class="route-input" placeholder="Address, place or stop">
+      <input type="text" class="route-input" id="route-to" placeholder="e.g. Helsinki">
     </div>
 
     <div style="display: flex; gap: 8px; margin-bottom: 20px;">
@@ -60,7 +57,11 @@
       <button class="btn-action" style="background: rgba(255,255,255,0.1); color: white;">Depart at...</button>
     </div>
 
-    <button class="btn-action" style="background: #D4AF37;">Search Routes</button>
+    <!-- The teal color matches the site scheme now -->
+    <button class="btn-action" id="search-routes-btn" style="background: #00BFA5; color: #1a1a1a;">Search Routes</button>
+    
+    <!-- This is where the searched routes will dynamically appear -->
+    <div id="route-results-container" class="route-results-scrollable"></div>
   </div>
 
   <!-- Sliding Station Panel (Right) -->
@@ -74,16 +75,12 @@
     
     <select class="search-box" id="station-select">
       <option value="" disabled selected>Select a station manually...</option>
-      <!-- Stations will be populated by JS -->
     </select>
 
     <h4 id="current-station-title" style="margin-top: 10px; color: #00BFA5;"></h4>
-    <div class="schedule-list" id="schedule-results">
-      <!-- Schedule items will appear here -->
-    </div>
+    <div class="schedule-list" id="schedule-results"></div>
   </div>
 
-  <!-- MapLibre GL JS & Custom JS -->
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <script src="index.js"></script>
 </body>
