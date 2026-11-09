@@ -1,178 +1,75 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
-/* 1. Reset and Full-Screen Map Layout */
+/* Reset and Layout */
 * { box-sizing: border-box; }
-body, html { 
-  margin: 0; 
-  padding: 0; 
-  width: 100%; 
-  height: 100%; 
-  font-family: 'Inter', sans-serif; 
-  overflow: hidden; 
-  background-color: #1a1a1a;
-}
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background-color: #1a1a1a; }
 #map { width: 100%; height: 100%; }
 
-/* 2. Floating UI Container */
+/* UI Containers */
 .floating-ui { position: absolute; z-index: 1000; pointer-events: none; }
 .pointer-events-auto { pointer-events: auto; }
 
-/* 3. Top Bar & Branding */
+/* Top Bar */
 .top-bar { top: 40px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
 .brand-logo { font-size: 28px; font-weight: 800; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 .brand-dot { color: #00BFA5; }
-
-.live-badge {
-  background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); padding: 8px 16px; border-radius: 20px;
-  color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; margin-top: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
+.live-badge { background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); padding: 8px 16px; border-radius: 20px; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; margin-top: 15px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 .live-dot { width: 10px; height: 10px; background: #00E676; border-radius: 50%; box-shadow: 0 0 8px #00E676; }
+.city-dropdown { background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); padding: 8px 16px; border-radius: 20px; color: white; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; }
 
-.city-dropdown {
-  background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); padding: 8px 16px; border-radius: 20px;
-  color: white; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer;
-}
-
-/* 4. Side Tools & Bottom Navigation */
+/* Side Tools */
 .side-tools { right: 20px; top: 120px; display: flex; flex-direction: column; gap: 12px; }
-.tool-btn {
-  width: 48px; height: 48px; border-radius: 14px; background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1); color: white; display: flex; justify-content: center; align-items: center;
-  cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
+.tool-btn { width: 48px; height: 48px; border-radius: 14px; background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); color: white; display: flex; justify-content: center; align-items: center; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
-.bottom-nav {
-  bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; background: #f8f9fa;
-  padding: 6px; border-radius: 30px; box-shadow: 0 12px 24px rgba(0,0,0,0.4); gap: 4px;
-}
-.nav-item {
-  padding: 12px 24px; border-radius: 24px; font-weight: 600; font-size: 15px; color: #333;
-  border: none; background: transparent; cursor: pointer; transition: background 0.2s;
-}
-/* CHANGED FROM YELLOW TO TEAL */
+/* Bottom Nav */
+.bottom-nav { bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; background: #f8f9fa; padding: 6px; border-radius: 30px; box-shadow: 0 12px 24px rgba(0,0,0,0.4); gap: 4px; }
+.nav-item { padding: 12px 24px; border-radius: 24px; font-weight: 600; font-size: 15px; color: #333; border: none; background: transparent; cursor: pointer; transition: background 0.2s; }
 .nav-item.active { background: #00BFA5; color: #1a1a1a; }
 
-/* 5. Sleek Train Route Markers */
-.route-marker {
-  background-color: #00BFA5; 
-  color: #1a1a1a;
-  padding: 6px 12px;
-  border-radius: 20px; 
-  font-weight: 800;
-  font-size: 13px;
-  border: 2px solid white;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
+/* Train Route Markers */
+.route-marker { background-color: #00BFA5; color: #1a1a1a; padding: 6px 12px; border-radius: 20px; font-weight: 800; font-size: 13px; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); white-space: nowrap; cursor: pointer; transition: transform 0.2s; }
 .route-marker:hover { transform: scale(1.1); z-index: 10; }
 
-/* 6. Station Sliding Panel */
-.station-panel {
-  position: absolute; top: 0; right: -400px; 
-  width: 350px; height: 100%; background: rgba(20, 20, 20, 0.85);
-  backdrop-filter: blur(15px); border-left: 1px solid rgba(255, 255, 255, 0.1);
-  z-index: 1001; padding: 24px; color: white;
-  transition: right 0.3s ease-in-out; display: flex; flex-direction: column;
-  gap: 16px; overflow-y: auto;
-}
-.station-panel.open { right: 0; }
+/* Panels Base Class */
 .close-btn { align-self: flex-end; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
-
-.search-box {
-  width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(0,0,0,0.5); color: white; font-family: 'Inter', sans-serif;
-}
+.btn-action { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; background: #00BFA5; color: #1a1a1a; transition: 0.2s; }
+.btn-action:hover { background: #00E676; filter: brightness(1.1); }
+.search-box { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; font-family: 'Inter', sans-serif; }
 .search-box option { background: #1a1a1a; }
 
-.btn-action {
-  width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;
-  background: #00BFA5; color: #1a1a1a; transition: 0.2s;
-}
-.btn-action:hover { background: #00E676; filter: brightness(1.1); }
+/* Settings Panel (Left) */
+.settings-panel { position: absolute; top: 0; left: -400px; width: 300px; height: 100%; background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(15px); border-right: 1px solid rgba(255, 255, 255, 0.1); z-index: 1001; padding: 24px; color: white; transition: left 0.3s ease-in-out; display: flex; flex-direction: column; }
+.settings-panel.open { left: 0; }
+.settings-group { background: rgba(0,0,0,0.5); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1); }
+.settings-group h4 { margin: 0 0 12px 0; color: #00BFA5; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 12px; cursor: pointer; }
+.toggle-row input[type="checkbox"] { accent-color: #00BFA5; width: 18px; height: 18px; cursor: pointer; }
 
+/* Station Sliding Panel (Right) */
+.station-panel { position: absolute; top: 0; right: -400px; width: 350px; height: 100%; background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(15px); border-left: 1px solid rgba(255, 255, 255, 0.1); z-index: 1001; padding: 24px; color: white; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.station-panel.open { right: 0; }
 .schedule-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-.schedule-item {
-  background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;
-  display: flex; justify-content: space-between; border-left: 4px solid #00BFA5;
-}
+.schedule-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #00BFA5; }
 .time-arr { color: #00E676; font-size: 14px; text-align: right; }
 .time-dep { color: #F5A623; font-size: 14px; text-align: right; }
 
-/* 7. Train Info Popup (MapLibre Default Override) */
+/* Train Info Popup */
 .maplibregl-popup { z-index: 1005; }
-.maplibregl-popup-content {
-  background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px);
-  color: white; border-radius: 12px; padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  min-width: 200px;
-}
+.maplibregl-popup-content { background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px); color: white; border-radius: 12px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.5); min-width: 200px; }
 .maplibregl-popup-close-button { color: white; font-size: 18px; padding: 4px 8px; }
 .popup-speed { color: #00E676; font-weight: bold; font-size: 18px; }
 .popup-destination { color: #F5A623; font-weight: bold; }
 
-/* 8. Sliding Bottom Route Planner */
-.bottom-route-panel {
-  position: absolute; bottom: -600px; left: 50%; transform: translateX(-50%);
-  width: 90%; max-width: 400px; background: rgba(25, 25, 25, 0.95);
-  backdrop-filter: blur(15px); border-radius: 20px 20px 0 0; padding: 24px;
-  z-index: 1010; color: white; border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 -8px 24px rgba(0,0,0,0.5); transition: bottom 0.3s ease-in-out;
-}
+/* Bottom Route Planner */
+.bottom-route-panel { position: absolute; bottom: -600px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(25, 25, 25, 0.95); backdrop-filter: blur(15px); border-radius: 20px 20px 0 0; padding: 24px; z-index: 1010; color: white; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 -8px 24px rgba(0,0,0,0.5); transition: bottom 0.3s ease-in-out; }
 .bottom-route-panel.open { bottom: 0; }
-
-.route-input-group {
-  background: rgba(0,0,0,0.5); border-radius: 12px; padding: 8px 12px;
-  margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);
-}
+.route-input-group { background: rgba(0,0,0,0.5); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); }
 .route-input-group label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
 .route-input { background: transparent; border: none; color: white; font-size: 16px; width: 100%; outline: none; }
 .route-input::placeholder { color: #555; }
+.route-results-scrollable { margin-top: 15px; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.route-result-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid #00BFA5; }
 
-.route-results-scrollable {
-  margin-top: 15px; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
-}
-.route-result-card {
-  background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid #00BFA5;
-}
-
-/* 9. Pulsing User Location Marker */
-.user-marker {
-  width: 16px; height: 16px;
-  background-color: #4285F4;
-  border: 3px solid white;
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(66, 133, 244, 0.6);
-  animation: pulse-blue 2s infinite;
-}
-@keyframes pulse-blue {
-  0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7); }
-  70% { box-shadow: 0 0 0 15px rgba(66, 133, 244, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); }
-}
-
-/* 10. Settings Sliding Panel (Left Side) */
-.settings-panel {
-  position: absolute; top: 0; left: -400px; 
-  width: 300px; height: 100%; background: rgba(20, 20, 20, 0.85);
-  backdrop-filter: blur(15px); border-right: 1px solid rgba(255, 255, 255, 0.1);
-  z-index: 1001; padding: 24px; color: white;
-  transition: left 0.3s ease-in-out; display: flex; flex-direction: column;
-}
-.settings-panel.open { left: 0; }
-
-.settings-group {
-  background: rgba(0,0,0,0.5); border-radius: 12px; padding: 16px;
-  margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1);
-}
-.settings-group h4 { margin: 0 0 12px 0; color: #00BFA5; }
-
-.toggle-row {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 14px; margin-bottom: 12px; cursor: pointer;
-}
-.toggle-row input[type="checkbox"] {
-  accent-color: #00BFA5; width: 18px; height: 18px; cursor: pointer;
-}
+/* Pulsing User Location Marker */
+.user-marker { width: 16px; height: 16px; background-color: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(66, 133, 244, 0.6); animation: pulse-blue 2s infinite; }
+@keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(66, 133, 244, 0); } 100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); } }

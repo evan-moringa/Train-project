@@ -70,10 +70,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
 
-            // Draw stations on the map as clickable dots once style is ready
             function drawStationLayer() {
                 if (map.getSource('stations')) return;
-
                 const features = passengerStations.map(s => ({
                     type: 'Feature',
                     geometry: { type: 'Point', coordinates: [s.longitude, s.latitude] },
@@ -86,25 +84,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     id: 'stations-layer',
                     type: 'circle',
                     source: 'stations',
-                    paint: {
-                        'circle-radius': 5,
-                        'circle-color': '#1a1a1a',
-                        'circle-stroke-width': 2,
-                        'circle-stroke-color': '#00BFA5'
-                    }
+                    paint: { 'circle-radius': 5, 'circle-color': '#1a1a1a', 'circle-stroke-width': 2, 'circle-stroke-color': '#00BFA5' }
                 });
 
-                // Click event for Station Icons
                 map.on('click', 'stations-layer', (e) => {
                     const props = e.features[0].properties;
-                    
-                    // Show a tiny label popup
                     new maplibregl.Popup({ offset: 10, closeButton: false })
                         .setLngLat(e.lngLat)
                         .setHTML(`<div style="font-weight: bold; font-family: Inter, sans-serif; font-size: 14px;">📍 ${props.name}</div>`)
                         .addTo(map);
 
-                    // Auto-open side panel to this station
                     const stationPanel = document.getElementById('station-panel');
                     if (stationPanel) stationPanel.classList.add('open');
                     if (stationSelect) stationSelect.value = props.code;
@@ -123,9 +112,41 @@ document.addEventListener("DOMContentLoaded", () => {
     loadStations();
 
     // ==========================================
-    // 3. LIVE DIGITRAFFIC TRACKING (MAP MARKERS)
+    // 3. SETTINGS & LIVE TRACKING LOOP
     // ==========================================
+    const openSettingsBtn = document.getElementById('open-settings-btn');
+    const closeSettingsBtn = document.getElementById('close-settings-panel');
+    const settingsPanel = document.getElementById('settings-panel');
+    const filterCommuter = document.getElementById('filter-commuter');
+    const filterLongDist = document.getElementById('filter-longdist');
+    const refreshRateSelect = document.getElementById('refresh-rate');
+
+    let currentRefreshInterval = 5000;
+    let trainFetchTimer = null;
     const trainMarkers = {};
+
+    if (openSettingsBtn && settingsPanel) openSettingsBtn.addEventListener('click', () => settingsPanel.classList.add('open'));
+    if (closeSettingsBtn && settingsPanel) closeSettingsBtn.addEventListener('click', () => settingsPanel.classList.remove('open'));
+
+    function applyTrainFilters() {
+        const showCommuter = filterCommuter ? filterCommuter.checked : true;
+        const showLongDist = filterLongDist ? filterLongDist.checked : true;
+
+        Object.values(trainMarkers).forEach(marker => {
+            const label = marker.getElement().textContent;
+            let isCommuter = label.includes('Commuter');
+            let isLongDist = !isCommuter;
+            
+            if ((isCommuter && showCommuter) || (isLongDist && showLongDist)) {
+                marker.getElement().style.display = 'block';
+            } else {
+                marker.getElement().style.display = 'none';
+            }
+        });
+    }
+
+    if (filterCommuter) filterCommuter.addEventListener('change', applyTrainFilters);
+    if (filterLongDist) filterLongDist.addEventListener('change', applyTrainFilters);
 
     async function fetchLiveTrains() {
         try {
@@ -196,11 +217,24 @@ document.addEventListener("DOMContentLoaded", () => {
                     trainMarkers[trainId] = marker;
                 }
             });
+            applyTrainFilters(); 
         } catch (error) { console.error("Failed to fetch locations:", error); }
     }
 
-    fetchLiveTrains();
-    setInterval(fetchLiveTrains, 5000);
+    function startTrainPolling(intervalMs) {
+        if (trainFetchTimer) clearInterval(trainFetchTimer);
+        fetchLiveTrains(); 
+        trainFetchTimer = setInterval(fetchLiveTrains, intervalMs);
+    }
+
+    if (refreshRateSelect) {
+        refreshRateSelect.addEventListener('change', (e) => {
+            currentRefreshInterval = parseInt(e.target.value, 10);
+            startTrainPolling(currentRefreshInterval);
+        });
+    }
+
+    startTrainPolling(currentRefreshInterval);
 
     // ==========================================
     // 4. ROUTE PLANNER SEARCH LOGIC
@@ -216,29 +250,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const routeResults = document.getElementById('route-results-container');
 
     if (openRouteBtn && routePanel) {
-        openRouteBtn.addEventListener('click', () => {
-            routePanel.classList.add('open');
-            mainBottomNav.style.display = 'none';
-        });
+        openRouteBtn.addEventListener('click', () => { routePanel.classList.add('open'); mainBottomNav.style.display = 'none'; });
     }
     if (closeRouteBtn && routePanel) {
-        closeRouteBtn.addEventListener('click', () => {
-            routePanel.classList.remove('open');
-            mainBottomNav.style.display = 'flex';
-        });
+        closeRouteBtn.addEventListener('click', () => { routePanel.classList.remove('open'); mainBottomNav.style.display = 'flex'; });
     }
 
     if (searchRoutesBtn) {
         searchRoutesBtn.addEventListener('click', async () => {
             routeResults.innerHTML = '<div style="text-align: center;">Searching for connections...</div>';
-
             const fromText = routeFromInput.value.trim().toLowerCase();
             const toText = routeToInput.value.trim().toLowerCase();
-
-            const findStation = (text) => allStations.find(s => 
-                s.stationName.toLowerCase().includes(text) || s.stationShortCode.toLowerCase() === text
-            );
-
+            const findStation = (text) => allStations.find(s => s.stationName.toLowerCase().includes(text) || s.stationShortCode.toLowerCase() === text);
             const fromStation = findStation(fromText);
             const toStation = findStation(toText);
 
@@ -250,18 +273,12 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const res = await fetch(`https://rata.digitraffic.fi/api/v1/live-trains/station/${fromStation.stationShortCode}/${toStation.stationShortCode}`);
                 const routes = await res.json();
-
-                if (routes.length === 0) {
-                    routeResults.innerHTML = '<div>No direct routes found between these stations right now.</div>';
-                    return;
-                }
-
+                if (routes.length === 0) { routeResults.innerHTML = '<div>No direct routes found right now.</div>'; return; }
                 routeResults.innerHTML = '';
                 
                 routes.slice(0, 5).forEach(train => {
                     const dep = train.timeTableRows.find(r => r.stationShortCode === fromStation.stationShortCode && r.type === 'DEPARTURE');
                     const arr = train.timeTableRows.find(r => r.stationShortCode === toStation.stationShortCode && r.type === 'ARRIVAL');
-
                     if (!dep || !arr) return;
 
                     const depTime = new Date(dep.liveEstimateTime || dep.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -282,14 +299,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                     `;
                 });
-            } catch (err) {
-                routeResults.innerHTML = '<div style="color: #ff5252;">Error loading route schedule.</div>';
-            }
+            } catch (err) { routeResults.innerHTML = '<div style="color: #ff5252;">Error loading route schedule.</div>'; }
         });
     }
 
     // ==========================================
-    // 5. SIDE PANEL (STATION SCHEDULE) & USER GPS LOCATION
+    // 5. SIDE PANEL (STATION SCHEDULE) & USER GPS
     // ==========================================
     const stationPanel = document.getElementById('station-panel');
     const closePanelBtn = document.getElementById('close-panel');
@@ -298,17 +313,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const scheduleResults = document.getElementById('schedule-results');
     const currentStationTitle = document.getElementById('current-station-title');
     const locationBtn = document.querySelector('.location-btn');
-    
     let userMarker = null;
 
-    // Helper to request GPS and place pulsing blue dot
     function locateUser(callback) {
         if (!navigator.geolocation) { alert("Geolocation not supported."); return; }
         navigator.geolocation.getCurrentPosition(position => {
             const userLat = position.coords.latitude;
             const userLon = position.coords.longitude;
             
-            // Draw or update pulsing user icon on map
             if (!userMarker) {
                 const el = document.createElement('div');
                 el.className = 'user-marker';
@@ -317,15 +329,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 userMarker.setLngLat([userLon, userLat]);
             }
             if (callback) callback(userLat, userLon);
-        }, () => { alert("Unable to retrieve location. Please check browser permissions."); });
+        }, () => { alert("Unable to retrieve location."); });
     }
 
-    if (locationBtn && stationPanel) {
-        locationBtn.addEventListener('click', () => {
-            stationPanel.classList.add('open');
-            locateUser(); // Shows user on map when opening panel
-        });
-    }
+    if (locationBtn && stationPanel) locationBtn.addEventListener('click', () => { stationPanel.classList.add('open'); locateUser(); });
     if (closePanelBtn && stationPanel) closePanelBtn.addEventListener('click', () => stationPanel.classList.remove('open'));
 
     async function fetchStationSchedule(stationCode, stationName) {
@@ -387,88 +394,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 allStations.forEach(station => {
                     const dLat = (station.latitude - userLat) * Math.PI / 180;
                     const dLon = (station.longitude - userLon) * Math.PI / 180;
-                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                              Math.cos(userLat * Math.PI / 180) * Math.cos(station.latitude * Math.PI / 180) *
-                              Math.sin(dLon/2) * Math.sin(dLon/2);
+                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(userLat * Math.PI / 180) * Math.cos(station.latitude * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
                     const distance = 6371 * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); 
-
                     if (distance < minDistance) { minDistance = distance; closestStation = station; }
                 });
 
                 if (closestStation) {
                     findNearMeBtn.textContent = "📍 Find Nearest Station";
                     map.flyTo({ center: [closestStation.longitude, closestStation.latitude], zoom: 14 });
-                    
                     const cleanName = closestStation.stationName.replace(" asema", "");
                     if (stationSelect) stationSelect.value = closestStation.stationShortCode;
                     fetchStationSchedule(closestStation.stationShortCode, cleanName);
-                } else {
-                    findNearMeBtn.textContent = "📍 Find Nearest Station";
-                }
+                } else { findNearMeBtn.textContent = "📍 Find Nearest Station"; }
             });
         });
     }
-    // ==========================================
-    // 6. SETTINGS PANEL LOGIC
-    // ==========================================
-    const openSettingsBtn = document.getElementById('open-settings-btn');
-    const closeSettingsBtn = document.getElementById('close-settings-panel');
-    const settingsPanel = document.getElementById('settings-panel');
-    
-    const filterCommuter = document.getElementById('filter-commuter');
-    const filterLongDist = document.getElementById('filter-longdist');
-    const refreshRateSelect = document.getElementById('refresh-rate');
-
-    let currentRefreshInterval = 5000;
-    let trainFetchTimer = null;
-
-    if (openSettingsBtn && settingsPanel) {
-        openSettingsBtn.addEventListener('click', () => settingsPanel.classList.add('open'));
-    }
-    if (closeSettingsBtn && settingsPanel) {
-        closeSettingsBtn.addEventListener('click', () => settingsPanel.classList.remove('open'));
-    }
-
-    // --- Train Filtering Logic ---
-    function applyTrainFilters() {
-        const showCommuter = filterCommuter.checked;
-        const showLongDist = filterLongDist.checked;
-
-        // Loop through all active train markers and hide/show them based on their category
-        Object.values(trainMarkers).forEach(marker => {
-            const label = marker.getElement().textContent;
-            
-            let isCommuter = label.includes('Commuter');
-            let isLongDist = !isCommuter; // Anything not a commuter is treated as long distance/IC
-            
-            if ((isCommuter && showCommuter) || (isLongDist && showLongDist)) {
-                marker.getElement().style.display = 'block';
-            } else {
-                marker.getElement().style.display = 'none';
-            }
-        });
-    }
-
-    if (filterCommuter) filterCommuter.addEventListener('change', applyTrainFilters);
-    if (filterLongDist) filterLongDist.addEventListener('change', applyTrainFilters);
-
-    // --- Battery Saver (Refresh Rate) Logic ---
-    function startTrainPolling(intervalMs) {
-        if (trainFetchTimer) clearInterval(trainFetchTimer);
-        
-        trainFetchTimer = setInterval(async () => {
-            await fetchLiveTrains();
-            applyTrainFilters(); // Re-apply filters whenever new data arrives
-        }, intervalMs);
-    }
-
-    if (refreshRateSelect) {
-        refreshRateSelect.addEventListener('change', (e) => {
-            currentRefreshInterval = parseInt(e.target.value, 10);
-            startTrainPolling(currentRefreshInterval);
-        });
-    }
-
-    // Start initial polling loop using the Settings logic instead of the old hardcoded setInterval
-    startTrainPolling(currentRefreshInterval);
 });
