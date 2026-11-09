@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 4. LIVE DIGITRAFFIC TRACKING
+    // 4. LIVE DIGITRAFFIC TRACKING (WITH POPUPS)
     // ==========================================
     const trainMarkers = {};
 
@@ -96,26 +96,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
             trains.forEach(train => {
                 const trainId = train.trainNumber;
+                const coords = train.location.coordinates;
                 
                 // Format label based on API data (e.g., "Commuter 123" or "IC 45")
                 const trainPrefix = train.trainCategory === 'Commuter' ? 'Commuter' : (train.trainType || '');
                 const trainLabel = `${trainPrefix} ${trainId}`.trim();
                 
-                const coords = train.location.coordinates;
+                // Extract speed and destination for the popup
+                const speed = train.speed || 0;
+                const destinationRow = train.timeTableRows ? train.timeTableRows[train.timeTableRows.length - 1] : null;
+                const destination = destinationRow ? destinationRow.stationShortCode : "Unknown";
+
+                const popupHTML = `
+                    <div style="font-family: 'Inter', sans-serif;">
+                        <h4 style="margin:0 0 5px 0; border-bottom:1px solid #444; padding-bottom:5px;">${trainLabel}</h4>
+                        <div style="font-size:13px; margin-bottom:5px;">Speed: <span class="popup-speed">${speed} km/h</span></div>
+                        <div style="font-size:13px;">Bound for: <span class="popup-destination">${destination}</span></div>
+                    </div>
+                `;
                 
                 if (trainMarkers[trainId]) {
-                    // Move marker and update label if it already exists
                     trainMarkers[trainId].setLngLat(coords);
-                    trainMarkers[trainId].getElement().textContent = trainLabel;
+                    trainMarkers[trainId].getPopup().setHTML(popupHTML);
                 } else {
-                    // Create new marker
                     const el = document.createElement('div');
                     el.className = 'route-marker';
                     el.textContent = trainLabel;
 
+                    const popup = new maplibregl.Popup({ offset: 25, closeButton: true, closeOnClick: false })
+                        .setHTML(popupHTML);
+
                     const marker = new maplibregl.Marker({ element: el })
                         .setLngLat(coords)
+                        .setPopup(popup)
                         .addTo(map);
+                        
                     trainMarkers[trainId] = marker;
                 }
             });
@@ -124,7 +139,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Fetch immediately, then poll every 5 seconds
     fetchLiveTrains();
     setInterval(fetchLiveTrains, 5000);
 
@@ -138,12 +152,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const scheduleResults = document.getElementById('schedule-results');
     const currentStationTitle = document.getElementById('current-station-title');
     
-    // Find the "Target" button in the side tools to open the panel
-    const locationBtn = Array.from(document.querySelectorAll('.tool-btn')).find(btn => btn.textContent.includes('⌖'));
+    const locationBtn = document.querySelector('.location-btn');
 
     let allStations = [];
 
-    // Open/Close panel logic
     if (locationBtn && stationPanel) {
         locationBtn.addEventListener('click', () => stationPanel.classList.add('open'));
     }
@@ -151,20 +163,17 @@ document.addEventListener("DOMContentLoaded", () => {
         closePanelBtn.addEventListener('click', () => stationPanel.classList.remove('open'));
     }
 
-    // Fetch Station Metadata (Names and Coordinates)
     async function loadStations() {
         try {
             const res = await fetch('https://rata.digitraffic.fi/api/v1/metadata/stations');
             const data = await res.json();
-            // Filter to passenger stations only
             allStations = data.filter(s => s.passengerTraffic === true);
             
             if (!stationSelect) return;
-            // Populate the dropdown alphabetically
             allStations.sort((a,b) => a.stationName.localeCompare(b.stationName)).forEach(station => {
                 const opt = document.createElement('option');
                 opt.value = station.stationShortCode;
-                opt.textContent = station.stationName.replace(" asema", ""); // Clean up name
+                opt.textContent = station.stationName.replace(" asema", "");
                 stationSelect.appendChild(opt);
             });
         } catch (err) { 
@@ -173,7 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loadStations();
 
-    // Fetch Live Schedule for a Station
     async function fetchStationSchedule(stationCode, stationName) {
         if (!currentStationTitle || !scheduleResults) return;
         
@@ -181,7 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
         scheduleResults.innerHTML = '';
         
         try {
-            // Fetch trains arriving/departing in the next 120 minutes
             const res = await fetch(`https://rata.digitraffic.fi/api/v1/live-trains/station/${stationCode}?minutes_before_departure=120&minutes_after_departure=0&minutes_before_arrival=120&minutes_after_arrival=0`);
             const trains = await res.json();
             
@@ -193,9 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             currentStationTitle.textContent = `${stationName} Schedule`;
 
-            // Display up to 10 upcoming trains
             trains.slice(0, 10).forEach(train => {
-                // Find the specific stop for this station in the train's timetable
                 const stop = train.timeTableRows.find(row => row.stationShortCode === stationCode && row.trainStopping);
                 if (!stop) return;
 
@@ -219,7 +224,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Manual Selection listener
     if (stationSelect) {
         stationSelect.addEventListener('change', (e) => {
             const code = e.target.value;
@@ -228,7 +232,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Geolocation: Find Nearest Station
     if (findNearMeBtn) {
         findNearMeBtn.addEventListener('click', () => {
             if (!navigator.geolocation) {
@@ -245,14 +248,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 let closestStation = null;
                 let minDistance = Infinity;
 
-                // Simple distance calculation formula (Haversine approximation)
                 allStations.forEach(station => {
                     const dLat = (station.latitude - userLat) * Math.PI / 180;
                     const dLon = (station.longitude - userLon) * Math.PI / 180;
                     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                               Math.cos(userLat * Math.PI / 180) * Math.cos(station.latitude * Math.PI / 180) *
                               Math.sin(dLon/2) * Math.sin(dLon/2);
-                    const distance = 6371 * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); // Distance in km
+                    const distance = 6371 * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); 
 
                     if (distance < minDistance) {
                         minDistance = distance;
@@ -262,10 +264,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (closestStation) {
                     findNearMeBtn.textContent = "📍 Find Nearest Station";
-                    // Fly the map to the nearest station
                     map.flyTo({ center: [closestStation.longitude, closestStation.latitude], zoom: 14 });
                     
-                    // Fetch the schedule
                     const cleanName = closestStation.stationName.replace(" asema", "");
                     if (stationSelect) stationSelect.value = closestStation.stationShortCode;
                     fetchStationSchedule(closestStation.stationShortCode, cleanName);
@@ -274,6 +274,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert("Unable to retrieve your location. Please check browser permissions.");
                 findNearMeBtn.textContent = "📍 Find Nearest Station";
             });
+        });
+    }
+
+    // ==========================================
+    // 6. BOTTOM ROUTE PLANNER LOGIC
+    // ==========================================
+    const openRouteBtn = document.getElementById('open-route-planner');
+    const closeRouteBtn = document.getElementById('close-route-panel');
+    const routePanel = document.getElementById('route-panel');
+    const mainBottomNav = document.getElementById('main-bottom-nav');
+
+    if (openRouteBtn && routePanel) {
+        openRouteBtn.addEventListener('click', () => {
+            routePanel.classList.add('open');
+            mainBottomNav.style.display = 'none';
+        });
+    }
+
+    if (closeRouteBtn && routePanel) {
+        closeRouteBtn.addEventListener('click', () => {
+            routePanel.classList.remove('open');
+            mainBottomNav.style.display = 'flex';
         });
     }
 });

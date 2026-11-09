@@ -9,84 +9,15 @@
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  
-  <style>
-    /* Reset and Layout */
-    * { box-sizing: border-box; }
-    body, html { 
-      margin: 0; padding: 0; width: 100%; height: 100%; 
-      font-family: 'Inter', sans-serif; overflow: hidden; background-color: #1a1a1a;
-    }
-    
-    #map { width: 100%; height: 100%; }
-
-    /* Floating UI Container */
-    .floating-ui { position: absolute; z-index: 1000; pointer-events: none; }
-    .pointer-events-auto { pointer-events: auto; }
-
-    /* Top Bar Layout */
-    .top-bar { top: 40px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
-    
-    /* Brand Logo */
-    .brand-logo { font-size: 28px; font-weight: 800; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-    .brand-dot { color: #00BFA5; } /* Teal Accent */
-
-    /* Live Badge */
-    .live-badge {
-      background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); padding: 8px 16px; border-radius: 20px;
-      color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; margin-top: 15px;
-      border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .live-dot { width: 10px; height: 10px; background: #00E676; border-radius: 50%; box-shadow: 0 0 8px #00E676; }
-
-    /* Dropdown Header */
-    .city-dropdown {
-      background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); padding: 8px 16px; border-radius: 20px;
-      color: white; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer;
-    }
-
-    /* Right Side Tools */
-    .side-tools { right: 20px; top: 120px; display: flex; flex-direction: column; gap: 12px; }
-    .tool-btn {
-      width: 48px; height: 48px; border-radius: 14px; background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1); color: white; display: flex; justify-content: center; align-items: center;
-      cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    /* Bottom Navigation Pill */
-    .bottom-nav {
-      bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; background: #f8f9fa;
-      padding: 6px; border-radius: 30px; box-shadow: 0 12px 24px rgba(0,0,0,0.4); gap: 4px;
-    }
-    .nav-item {
-      padding: 12px 24px; border-radius: 24px; font-weight: 600; font-size: 15px; color: #333;
-      border: none; background: transparent; cursor: pointer; transition: background 0.2s;
-    }
-    .nav-item.active { background: #FFD600; color: black; }
-
-    /* Sleek Train Route Markers */
-    .route-marker {
-      background-color: #00BFA5; 
-      color: #1a1a1a;
-      padding: 6px 12px;
-      border-radius: 20px; /* Pill shape */
-      font-weight: 800;
-      font-size: 13px;
-      border: 2px solid white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      white-space: nowrap;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .route-marker:hover { transform: scale(1.1); z-index: 10; }
-  </style>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
 
   <!-- Map Container -->
   <div id="map"></div>
 
-  <!-- Floating UI Overlay -->
+  <!-- Floating UI Overlay (Top) -->
   <div class="floating-ui top-bar">
     <div>
       <h1 class="brand-logo pointer-events-auto">RailTrack<span class="brand-dot">.</span></h1>
@@ -95,18 +26,64 @@
     <div class="city-dropdown pointer-events-auto">Finnish Railways (VR) <span>▼</span></div>
   </div>
 
+  <!-- Right Side Tools -->
   <div class="floating-ui side-tools pointer-events-auto">
     <button class="tool-btn">⚙️</button>
     <button class="tool-btn toggle-3d-btn">2D</button>
-    <button class="tool-btn">⌖</button>
+    <button class="tool-btn location-btn">⌖</button>
   </div>
 
-  <div class="floating-ui bottom-nav pointer-events-auto">
-    <button class="nav-item">⏱ Now</button>
-    <button class="nav-item active">🗺 Map</button>
-    <button class="nav-item">⚲ Go</button>
+  <!-- Floating Bottom Nav Button -->
+  <div class="floating-ui bottom-nav pointer-events-auto" id="main-bottom-nav">
+    <button class="nav-item active" id="open-route-planner">🗺 Map & Routing</button>
   </div>
 
+  <!-- Hidden Bottom Route Planner Panel -->
+  <div class="bottom-route-panel" id="route-panel">
+    <button class="close-btn" id="close-route-panel" style="position: absolute; right: 20px; top: 20px;">×</button>
+    <h3 style="margin-top: 0; margin-bottom: 20px;">Find Routes</h3>
+    
+    <div class="route-input-group">
+      <label>From</label>
+      <input type="text" class="route-input" placeholder="Current location">
+    </div>
+    
+    <div style="text-align: center; margin-bottom: 12px; color: #888;">↑↓</div>
+
+    <div class="route-input-group">
+      <label>To</label>
+      <input type="text" class="route-input" placeholder="Address, place or stop">
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+      <button class="btn-action" style="background: rgba(255,255,255,0.1); color: white;">Leave now</button>
+      <button class="btn-action" style="background: rgba(255,255,255,0.1); color: white;">Depart at...</button>
+    </div>
+
+    <button class="btn-action" style="background: #D4AF37;">Search Routes</button>
+  </div>
+
+  <!-- Sliding Station Panel (Right) -->
+  <div class="station-panel" id="station-panel">
+    <button class="close-btn" id="close-panel">×</button>
+    <h3>Live Station Schedule</h3>
+    
+    <button class="btn-action" id="find-near-me">📍 Find Nearest Station</button>
+    
+    <div style="text-align: center; font-size: 12px; opacity: 0.7;">— OR —</div>
+    
+    <select class="search-box" id="station-select">
+      <option value="" disabled selected>Select a station manually...</option>
+      <!-- Stations will be populated by JS -->
+    </select>
+
+    <h4 id="current-station-title" style="margin-top: 10px; color: #00BFA5;"></h4>
+    <div class="schedule-list" id="schedule-results">
+      <!-- Schedule items will appear here -->
+    </div>
+  </div>
+
+  <!-- MapLibre GL JS & Custom JS -->
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <script src="index.js"></script>
 </body>
