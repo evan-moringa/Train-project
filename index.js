@@ -49,56 +49,78 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 2. DATA CACHING (FIX FOR "UNKNOWN" DESTINATIONS)
+    // 2. LOAD STATION METADATA & MAP ICONS
     // ==========================================
     let allStations = [];
-    let trainDetailsCache = {}; // Caches destination and type for popup
 
-    // Load static list of stations first
     async function loadStations() {
         try {
             const res = await fetch('https://rata.digitraffic.fi/api/v1/metadata/stations');
-            const data = await res.json();
-            allStations = data.filter(s => s.passengerTraffic === true);
+            allStations = await res.json();
             
             const stationSelect = document.getElementById('station-select');
+            const passengerStations = allStations.filter(s => s.passengerTraffic === true);
+
             if (stationSelect) {
-                allStations.sort((a,b) => a.stationName.localeCompare(b.stationName)).forEach(station => {
+                passengerStations.sort((a,b) => a.stationName.localeCompare(b.stationName)).forEach(station => {
                     const opt = document.createElement('option');
                     opt.value = station.stationShortCode;
                     opt.textContent = station.stationName.replace(" asema", "");
                     stationSelect.appendChild(opt);
                 });
             }
-            // Once stations load, fetch the detailed timetables once to fix destinations
-            fetchActiveTrainDetails();
+
+            // Draw stations on the map as clickable dots once style is ready
+            function drawStationLayer() {
+                if (map.getSource('stations')) return;
+
+                const features = passengerStations.map(s => ({
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: [s.longitude, s.latitude] },
+                    properties: { name: s.stationName.replace(" asema", ""), code: s.stationShortCode }
+                }));
+
+                map.addSource('stations', { type: 'geojson', data: { type: 'FeatureCollection', features: features } });
+
+                map.addLayer({
+                    id: 'stations-layer',
+                    type: 'circle',
+                    source: 'stations',
+                    paint: {
+                        'circle-radius': 5,
+                        'circle-color': '#1a1a1a',
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#00BFA5'
+                    }
+                });
+
+                // Click event for Station Icons
+                map.on('click', 'stations-layer', (e) => {
+                    const props = e.features[0].properties;
+                    
+                    // Show a tiny label popup
+                    new maplibregl.Popup({ offset: 10, closeButton: false })
+                        .setLngLat(e.lngLat)
+                        .setHTML(`<div style="font-weight: bold; font-family: Inter, sans-serif; font-size: 14px;">📍 ${props.name}</div>`)
+                        .addTo(map);
+
+                    // Auto-open side panel to this station
+                    const stationPanel = document.getElementById('station-panel');
+                    if (stationPanel) stationPanel.classList.add('open');
+                    if (stationSelect) stationSelect.value = props.code;
+                    fetchStationSchedule(props.code, props.name);
+                });
+
+                map.on('mouseenter', 'stations-layer', () => map.getCanvas().style.cursor = 'pointer');
+                map.on('mouseleave', 'stations-layer', () => map.getCanvas().style.cursor = '');
+            }
+
+            if (map.isStyleLoaded()) { drawStationLayer(); } 
+            else { map.on('style.load', drawStationLayer); }
+
         } catch (err) { console.error("Error loading stations:", err); }
     }
-
-    // Runs in the background to grab timetables without slowing down the map
-    async function fetchActiveTrainDetails() {
-        try {
-            const res = await fetch('https://rata.digitraffic.fi/api/v1/live-trains?runningCurrently=true');
-            const activeTrains = await res.json();
-            
-            activeTrains.forEach(t => {
-                const stops = t.timeTableRows.filter(row => row.trainStopping);
-                const finalStopCode = stops.length > 0 ? stops[stops.length - 1].stationShortCode : "Unknown";
-                
-                // Translate the short code (e.g. HKI) to the city name (e.g. Helsinki)
-                const stationObj = allStations.find(s => s.stationShortCode === finalStopCode);
-                const finalStopName = stationObj ? stationObj.stationName.replace(" asema", "") : finalStopCode;
-
-                trainDetailsCache[t.trainNumber] = {
-                    prefix: t.trainCategory === 'Commuter' ? 'Commuter' : (t.trainType || ''),
-                    destination: finalStopName
-                };
-            });
-        } catch (e) { console.error("Failed to fetch active train details:", e); }
-    }
-
     loadStations();
-    setInterval(fetchActiveTrainDetails, 60000); // Refresh timetables every minute
 
     // ==========================================
     // 3. LIVE DIGITRAFFIC TRACKING (MAP MARKERS)
@@ -118,35 +140,59 @@ document.addEventListener("DOMContentLoaded", () => {
                 const coords = train.location.coordinates;
                 const speed = train.speed || 0;
                 
-                // Use cached details if available, otherwise generic
-                const cached = trainDetailsCache[trainId] || { prefix: "Train", destination: "Updating..." };
-                const trainLabel = `${cached.prefix} ${trainId}`.trim();
-
-                const popupHTML = `
-                    <div style="font-family: 'Inter', sans-serif;">
-                        <h4 style="margin:0 0 5px 0; border-bottom:1px solid #444; padding-bottom:5px;">${trainLabel}</h4>
-                        <div style="font-size:13px; margin-bottom:5px;">Speed: <span class="popup-speed">${speed} km/h</span></div>
-                        <div style="font-size:13px;">Bound for: <span class="popup-destination">${cached.destination}</span></div>
-                    </div>
-                `;
-                
                 if (trainMarkers[trainId]) {
                     trainMarkers[trainId].setLngLat(coords);
-                    trainMarkers[trainId].getPopup().setHTML(popupHTML);
-                    trainMarkers[trainId].getElement().textContent = trainLabel;
+                    trainMarkers[trainId].currentSpeed = speed; 
                 } else {
                     const el = document.createElement('div');
                     el.className = 'route-marker';
-                    el.textContent = trainLabel;
+                    el.textContent = trainId;
 
                     const popup = new maplibregl.Popup({ offset: 25, closeButton: true, closeOnClick: false })
-                        .setHTML(popupHTML);
+                        .setHTML(`<div style="font-family: 'Inter', sans-serif; padding: 10px;">Loading schedule...</div>`);
+
+                    popup.on('open', async () => {
+                        try {
+                            const currentSpeed = trainMarkers[trainId].currentSpeed || 0;
+                            const res = await fetch(`https://rata.digitraffic.fi/api/v1/trains/latest/${trainId}`);
+                            const dataList = await res.json();
+                            
+                            if (dataList && dataList.length > 0) {
+                                const t = dataList[0];
+                                const stops = t.timeTableRows.filter(row => row.trainStopping);
+                                
+                                const finalStopCode = stops.length > 0 ? stops[stops.length - 1].stationShortCode : "Unknown";
+                                const destObj = allStations.find(s => s.stationShortCode === finalStopCode);
+                                const finalStopName = destObj ? destObj.stationName.replace(" asema", "") : finalStopCode;
+                                
+                                const now = new Date();
+                                const nextStop = stops.find(row => new Date(row.liveEstimateTime || row.scheduledTime) > now && row.type === 'ARRIVAL');
+                                const nextStopCode = nextStop ? nextStop.stationShortCode : null;
+                                const nextObj = nextStopCode ? allStations.find(s => s.stationShortCode === nextStopCode) : null;
+                                const nextStopName = nextObj ? nextObj.stationName.replace(" asema", "") : (nextStopCode || "End of Line");
+
+                                const prefix = t.trainCategory === 'Commuter' ? 'Commuter' : (t.trainType || 'Train');
+                                const fullLabel = `${prefix} ${trainId}`.trim();
+                                trainMarkers[trainId].getElement().textContent = fullLabel;
+
+                                popup.setHTML(`
+                                    <div style="font-family: 'Inter', sans-serif; min-width: 180px;">
+                                        <h4 style="margin:0 0 5px 0; border-bottom:1px solid #444; padding-bottom:5px;">${fullLabel}</h4>
+                                        <div style="font-size:13px; margin-bottom:5px;">Speed: <span class="popup-speed">${currentSpeed} km/h</span></div>
+                                        <div style="font-size:13px; margin-bottom:5px;">Next Stop: <span style="color: #00E676; font-weight: bold;">${nextStopName}</span></div>
+                                        <div style="font-size:13px;">Bound for: <span class="popup-destination">${finalStopName}</span></div>
+                                    </div>
+                                `);
+                            } else { popup.setHTML(`<div style="font-family: 'Inter', sans-serif;">Data unavailable</div>`); }
+                        } catch (e) { popup.setHTML(`<div style="font-family: 'Inter', sans-serif;">Error loading details</div>`); }
+                    });
 
                     const marker = new maplibregl.Marker({ element: el })
                         .setLngLat(coords)
                         .setPopup(popup)
                         .addTo(map);
                         
+                    marker.currentSpeed = speed; 
                     trainMarkers[trainId] = marker;
                 }
             });
@@ -169,7 +215,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const routeToInput = document.getElementById('route-to');
     const routeResults = document.getElementById('route-results-container');
 
-    // UI Toggles
     if (openRouteBtn && routePanel) {
         openRouteBtn.addEventListener('click', () => {
             routePanel.classList.add('open');
@@ -183,7 +228,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Execute Search
     if (searchRoutesBtn) {
         searchRoutesBtn.addEventListener('click', async () => {
             routeResults.innerHTML = '<div style="text-align: center;">Searching for connections...</div>';
@@ -191,7 +235,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const fromText = routeFromInput.value.trim().toLowerCase();
             const toText = routeToInput.value.trim().toLowerCase();
 
-            // Find the station codes from user string input
             const findStation = (text) => allStations.find(s => 
                 s.stationName.toLowerCase().includes(text) || s.stationShortCode.toLowerCase() === text
             );
@@ -205,7 +248,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                // Fetch trains traveling between the two stations today
                 const res = await fetch(`https://rata.digitraffic.fi/api/v1/live-trains/station/${fromStation.stationShortCode}/${toStation.stationShortCode}`);
                 const routes = await res.json();
 
@@ -216,7 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 routeResults.innerHTML = '';
                 
-                // Show the next 5 direct connections
                 routes.slice(0, 5).forEach(train => {
                     const dep = train.timeTableRows.find(r => r.stationShortCode === fromStation.stationShortCode && r.type === 'DEPARTURE');
                     const arr = train.timeTableRows.find(r => r.stationShortCode === toStation.stationShortCode && r.type === 'ARRIVAL');
@@ -248,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 5. SIDE PANEL (STATION SCHEDULE & GEOLOCATION)
+    // 5. SIDE PANEL (STATION SCHEDULE) & USER GPS LOCATION
     // ==========================================
     const stationPanel = document.getElementById('station-panel');
     const closePanelBtn = document.getElementById('close-panel');
@@ -257,8 +298,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const scheduleResults = document.getElementById('schedule-results');
     const currentStationTitle = document.getElementById('current-station-title');
     const locationBtn = document.querySelector('.location-btn');
+    
+    let userMarker = null;
 
-    if (locationBtn && stationPanel) locationBtn.addEventListener('click', () => stationPanel.classList.add('open'));
+    // Helper to request GPS and place pulsing blue dot
+    function locateUser(callback) {
+        if (!navigator.geolocation) { alert("Geolocation not supported."); return; }
+        navigator.geolocation.getCurrentPosition(position => {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+            
+            // Draw or update pulsing user icon on map
+            if (!userMarker) {
+                const el = document.createElement('div');
+                el.className = 'user-marker';
+                userMarker = new maplibregl.Marker({ element: el }).setLngLat([userLon, userLat]).addTo(map);
+            } else {
+                userMarker.setLngLat([userLon, userLat]);
+            }
+            if (callback) callback(userLat, userLon);
+        }, () => { alert("Unable to retrieve location. Please check browser permissions."); });
+    }
+
+    if (locationBtn && stationPanel) {
+        locationBtn.addEventListener('click', () => {
+            stationPanel.classList.add('open');
+            locateUser(); // Shows user on map when opening panel
+        });
+    }
     if (closePanelBtn && stationPanel) closePanelBtn.addEventListener('click', () => stationPanel.classList.remove('open'));
 
     async function fetchStationSchedule(stationCode, stationName) {
@@ -312,12 +379,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (findNearMeBtn) {
         findNearMeBtn.addEventListener('click', () => {
-            if (!navigator.geolocation) { alert("Geolocation not supported."); return; }
             findNearMeBtn.textContent = "Locating...";
-            
-            navigator.geolocation.getCurrentPosition(position => {
-                const userLat = position.coords.latitude;
-                const userLon = position.coords.longitude;
+            locateUser((userLat, userLon) => {
                 let closestStation = null;
                 let minDistance = Infinity;
 
@@ -339,10 +402,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     const cleanName = closestStation.stationName.replace(" asema", "");
                     if (stationSelect) stationSelect.value = closestStation.stationShortCode;
                     fetchStationSchedule(closestStation.stationShortCode, cleanName);
+                } else {
+                    findNearMeBtn.textContent = "📍 Find Nearest Station";
                 }
-            }, () => {
-                alert("Unable to retrieve location.");
-                findNearMeBtn.textContent = "📍 Find Nearest Station";
             });
         });
     }

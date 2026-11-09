@@ -50,7 +50,8 @@ body, html {
   padding: 12px 24px; border-radius: 24px; font-weight: 600; font-size: 15px; color: #333;
   border: none; background: transparent; cursor: pointer; transition: background 0.2s;
 }
-.nav-item.active { background: #FFD600; color: black; }
+/* CHANGED FROM YELLOW TO TEAL */
+.nav-item.active { background: #00BFA5; color: #1a1a1a; }
 
 /* 5. Sleek Train Route Markers */
 .route-marker {
@@ -70,20 +71,12 @@ body, html {
 
 /* 6. Station Sliding Panel */
 .station-panel {
-  position: absolute;
-  top: 0; right: -400px; 
-  width: 350px; height: 100%;
-  background: rgba(20, 20, 20, 0.85);
-  backdrop-filter: blur(15px);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  z-index: 1001;
-  padding: 24px;
-  color: white;
-  transition: right 0.3s ease-in-out;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
+  position: absolute; top: 0; right: -400px; 
+  width: 350px; height: 100%; background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(15px); border-left: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1001; padding: 24px; color: white;
+  transition: right 0.3s ease-in-out; display: flex; flex-direction: column;
+  gap: 16px; overflow-y: auto;
 }
 .station-panel.open { right: 0; }
 .close-btn { align-self: flex-end; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
@@ -143,4 +136,19 @@ body, html {
 }
 .route-result-card {
   background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 4px solid #00BFA5;
+}
+
+/* 9. Pulsing User Location Marker */
+.user-marker {
+  width: 16px; height: 16px;
+  background-color: #4285F4;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(66, 133, 244, 0.6);
+  animation: pulse-blue 2s infinite;
+}
+@keyframes pulse-blue {
+  0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(66, 133, 244, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); }
 }
