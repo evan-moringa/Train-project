@@ -82,5 +82,32 @@
 
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <script src="index.js"></script>
+  <!-- Sliding Settings Panel (Left Side) -->
+  <div class="settings-panel" id="settings-panel">
+    <button class="close-btn" id="close-settings-panel">×</button>
+    <h3 style="margin-top: 0; margin-bottom: 20px;">Settings</h3>
+    
+    <div class="settings-group">
+      <h4>Filter Trains</h4>
+      <label class="toggle-row">
+        <span>Commuter Trains</span>
+        <input type="checkbox" id="filter-commuter" checked>
+      </label>
+      <label class="toggle-row">
+        <span>Long-Distance (IC/Pendolino)</span>
+        <input type="checkbox" id="filter-longdist" checked>
+      </label>
+    </div>
+
+    <div class="settings-group">
+      <h4>Battery Saver</h4>
+      <p style="font-size: 12px; color: #888; margin-top: 0;">Reduces how often train locations update.</p>
+      <select class="search-box" id="refresh-rate">
+        <option value="5000">High Performance (5s)</option>
+        <option value="15000">Balanced (15s)</option>
+        <option value="30000">Battery Saver (30s)</option>
+      </select>
+    </div>
+  </div>
 </body>
 </html>

@@ -408,4 +408,67 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     }
+    // ==========================================
+    // 6. SETTINGS PANEL LOGIC
+    // ==========================================
+    const openSettingsBtn = document.getElementById('open-settings-btn');
+    const closeSettingsBtn = document.getElementById('close-settings-panel');
+    const settingsPanel = document.getElementById('settings-panel');
+    
+    const filterCommuter = document.getElementById('filter-commuter');
+    const filterLongDist = document.getElementById('filter-longdist');
+    const refreshRateSelect = document.getElementById('refresh-rate');
+
+    let currentRefreshInterval = 5000;
+    let trainFetchTimer = null;
+
+    if (openSettingsBtn && settingsPanel) {
+        openSettingsBtn.addEventListener('click', () => settingsPanel.classList.add('open'));
+    }
+    if (closeSettingsBtn && settingsPanel) {
+        closeSettingsBtn.addEventListener('click', () => settingsPanel.classList.remove('open'));
+    }
+
+    // --- Train Filtering Logic ---
+    function applyTrainFilters() {
+        const showCommuter = filterCommuter.checked;
+        const showLongDist = filterLongDist.checked;
+
+        // Loop through all active train markers and hide/show them based on their category
+        Object.values(trainMarkers).forEach(marker => {
+            const label = marker.getElement().textContent;
+            
+            let isCommuter = label.includes('Commuter');
+            let isLongDist = !isCommuter; // Anything not a commuter is treated as long distance/IC
+            
+            if ((isCommuter && showCommuter) || (isLongDist && showLongDist)) {
+                marker.getElement().style.display = 'block';
+            } else {
+                marker.getElement().style.display = 'none';
+            }
+        });
+    }
+
+    if (filterCommuter) filterCommuter.addEventListener('change', applyTrainFilters);
+    if (filterLongDist) filterLongDist.addEventListener('change', applyTrainFilters);
+
+    // --- Battery Saver (Refresh Rate) Logic ---
+    function startTrainPolling(intervalMs) {
+        if (trainFetchTimer) clearInterval(trainFetchTimer);
+        
+        trainFetchTimer = setInterval(async () => {
+            await fetchLiveTrains();
+            applyTrainFilters(); // Re-apply filters whenever new data arrives
+        }, intervalMs);
+    }
+
+    if (refreshRateSelect) {
+        refreshRateSelect.addEventListener('change', (e) => {
+            currentRefreshInterval = parseInt(e.target.value, 10);
+            startTrainPolling(currentRefreshInterval);
+        });
+    }
+
+    // Start initial polling loop using the Settings logic instead of the old hardcoded setInterval
+    startTrainPolling(currentRefreshInterval);
 });
