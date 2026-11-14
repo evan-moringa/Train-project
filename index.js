@@ -14,6 +14,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     let is3D = true;
+    let railwayNetworkGeoJSON = null;
+
+    // Create floating "Clear Route" banner dynamically
+    const clearBanner = document.createElement('div');
+    clearBanner.className = 'clear-route-banner';
+    clearBanner.innerHTML = `<span id="active-route-label">Route Active</span> <button class="clear-route-btn" id="clear-route-btn">✕</button>`;
+    document.body.appendChild(clearBanner);
+
+    document.getElementById('clear-route-btn').addEventListener('click', clearHighlightedRoute);
 
     map.on('load', () => {
         const layers = map.getStyle().layers;
@@ -23,6 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 labelLayerId = layers[i].id; break;
             }
         }
+
+        // 3D Buildings Layer
         map.addLayer({
             'id': '3d-buildings',
             'source': 'openmaptiles', 
@@ -36,7 +47,216 @@ document.addEventListener("DOMContentLoaded", () => {
                 'fill-extrusion-opacity': 0.8 
             }
         }, labelLayerId);
+
+        // Initialize Empty Sources & Layers for Exact Railway Route Highlighting
+        map.addSource('highlighted-rail-geometry', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+        });
+
+        map.addSource('highlighted-route-stops', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+        });
+
+        // Outer Neon Glow for the Railway Track
+        map.addLayer({
+            id: 'active-rail-glow',
+            type: 'line',
+            source: 'highlighted-rail-geometry',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+                'line-color': '#00BFA5',
+                'line-width': 10,
+                'line-opacity': 0.35,
+                'line-blur': 4
+            }
+        }, labelLayerId);
+
+        // Core Crisp Track Line
+        map.addLayer({
+            id: 'active-rail-line',
+            type: 'line',
+            source: 'highlighted-rail-geometry',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+                'line-color': '#00E676',
+                'line-width': 4,
+                'line-opacity': 0.95
+            }
+        }, labelLayerId);
+
+        // Station Stop Dots along the Active Route
+        map.addLayer({
+            id: 'active-route-stop-dots',
+            type: 'circle',
+            source: 'highlighted-route-stops',
+            paint: {
+                'circle-radius': 6,
+                'circle-color': '#FFD600',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#1a1a1a'
+            }
+        });
+
+        // Fetch Exact Finnish Railway Track Geometry from Digitraffic Infra API
+        loadExactRailwayGeometry();
     });
+
+    async function loadExactRailwayGeometry() {
+        try {
+            // Digitraffic Infra API provides exact curved railway track segments (rataosat)
+            const res = await fetch('https://rata.digitraffic.fi/infra-api/0.7/rataosat.geojson');
+            if (res.ok) {
+                railwayNetworkGeoJSON = await res.json();
+                console.log("Loaded exact Finnish railway geometry:", railwayNetworkGeoJSON.features.length, "track segments");
+            }
+        } catch (err) {
+            console.warn("Could not load full infra geometry, will use station-to-station fallback:", err);
+        }
+    }
+
+    // Helper: Distance from a point [lon, lat] to a line segment [A, B] in km
+    function pointToSegmentDistanceKm(p, a, b) {
+        const x = p[0], y = p[1];
+        const x1 = a[0], y1 = a[1];
+        const x2 = b[0], y2 = b[1];
+
+        const A = x - x1;
+        const B = y - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        let param = -1;
+        if (lenSq !== 0) param = dot / lenSq;
+
+        let xx, yy;
+        if (param < 0) { xx = x1; yy = y1; }
+        else if (param > 1) { xx = x2; yy = y2; }
+        else { xx = x1 + param * C; yy = y1 + param * D; }
+
+        const dx = (x - xx) * 111.32 * Math.cos(y * Math.PI / 180);
+        const dy = (y - yy) * 110.57;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Highlight Exact Railway Track for a Clicked Train
+    function highlightTrainRoute(trainObj, trainLabel) {
+        if (!trainObj || !trainObj.timeTableRows || allStations.length === 0) return;
+
+        // 1. Extract unique ordered stations along this train's route
+        const orderedCoords = [];
+        const stopFeatures = [];
+        const seenStations = new Set();
+
+        trainObj.timeTableRows.forEach(row => {
+            const st = allStations.find(s => s.stationShortCode === row.stationShortCode);
+            if (st) {
+                const coord = [st.longitude, st.latitude];
+                if (orderedCoords.length === 0 || 
+                    orderedCoords[orderedCoords.length - 1][0] !== coord[0] || 
+                    orderedCoords[orderedCoords.length - 1][1] !== coord[1]) {
+                    orderedCoords.push(coord);
+                }
+
+                if (row.trainStopping && !seenStations.has(st.stationShortCode)) {
+                    seenStations.add(st.stationShortCode);
+                    stopFeatures.push({
+                        type: 'Feature',
+                        geometry: { type: 'Point', coordinates: coord },
+                        properties: { name: st.stationName.replace(" asema", "") }
+                    });
+                }
+            }
+        });
+
+        if (orderedCoords.length < 2) return;
+
+        // 2. Match exact curved railway track segments against the train's corridor
+        let matchedFeatures = [];
+
+        if (railwayNetworkGeoJSON && railwayNetworkGeoJSON.features) {
+            // Build bounding box around the route with a small buffer
+            let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
+            orderedCoords.forEach(c => {
+                if (c[0] < minLon) minLon = c[0];
+                if (c[0] > maxLon) maxLon = c[0];
+                if (c[1] < minLat) minLat = c[1];
+                if (c[1] > maxLat) maxLat = c[1];
+            });
+            minLon -= 0.15; maxLon += 0.15;
+            minLat -= 0.15; maxLat += 0.15;
+
+            railwayNetworkGeoJSON.features.forEach(feature => {
+                if (!feature.geometry) return;
+                const geomType = feature.geometry.type;
+                const lines = geomType === 'LineString' ? [feature.geometry.coordinates] :
+                              geomType === 'MultiLineString' ? feature.geometry.coordinates : [];
+
+                for (const line of lines) {
+                    if (line.length === 0) continue;
+                    // Quick bounding box rejection
+                    const midPt = line[Math.floor(line.length / 2)];
+                    if (midPt[0] < minLon || midPt[0] > maxLon || midPt[1] < minLat || midPt[1] > maxLat) continue;
+
+                    // Check if start, middle, and end of this track segment lie within 2.5 km of the train's station corridor
+                    const samplePts = [line[0], midPt, line[line.length - 1]];
+                    const allClose = samplePts.every(pt => {
+                        for (let i = 0; i < orderedCoords.length - 1; i++) {
+                            if (pointToSegmentDistanceKm(pt, orderedCoords[i], orderedCoords[i + 1]) < 2.5) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+
+                    if (allClose) {
+                        matchedFeatures.push(feature);
+                        break;
+                    }
+                }
+            });
+        }
+
+        // Fallback to station-to-station line if infra API didn't return segments
+        if (matchedFeatures.length === 0) {
+            matchedFeatures = [{
+                type: 'Feature',
+                geometry: { type: 'LineString', coordinates: orderedCoords }
+            }];
+        }
+
+        // 3. Update MapLibre Sources
+        if (map.getSource('highlighted-rail-geometry')) {
+            map.getSource('highlighted-rail-geometry').setData({
+                type: 'FeatureCollection',
+                features: matchedFeatures
+            });
+        }
+        if (map.getSource('highlighted-route-stops')) {
+            map.getSource('highlighted-route-stops').setData({
+                type: 'FeatureCollection',
+                features: stopFeatures
+            });
+        }
+
+        // Show "Clear Route" banner
+        const labelEl = document.getElementById('active-route-label');
+        if (labelEl) labelEl.textContent = `🛤️ ${trainLabel} Route`;
+        clearBanner.classList.add('visible');
+    }
+
+    function clearHighlightedRoute() {
+        if (map.getSource('highlighted-rail-geometry')) {
+            map.getSource('highlighted-rail-geometry').setData({ type: 'FeatureCollection', features: [] });
+        }
+        if (map.getSource('highlighted-route-stops')) {
+            map.getSource('highlighted-route-stops').setData({ type: 'FeatureCollection', features: [] });
+        }
+        clearBanner.classList.remove('visible');
+    }
 
     const toggleViewBtn = document.querySelector('.toggle-3d-btn');
     if (toggleViewBtn) {
@@ -170,7 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     el.textContent = trainId;
 
                     const popup = new maplibregl.Popup({ offset: 25, closeButton: true, closeOnClick: false })
-                        .setHTML(`<div style="font-family: 'Inter', sans-serif; padding: 10px;">Loading schedule...</div>`);
+                        .setHTML(`<div style="font-family: 'Inter', sans-serif; padding: 10px;">Loading schedule & track...</div>`);
 
                     popup.on('open', async () => {
                         try {
@@ -195,6 +415,9 @@ document.addEventListener("DOMContentLoaded", () => {
                                 const prefix = t.trainCategory === 'Commuter' ? 'Commuter' : (t.trainType || 'Train');
                                 const fullLabel = `${prefix} ${trainId}`.trim();
                                 trainMarkers[trainId].getElement().textContent = fullLabel;
+
+                                // Highlight exact curved railway geometry for this train
+                                highlightTrainRoute(t, fullLabel);
 
                                 popup.setHTML(`
                                     <div style="font-family: 'Inter', sans-serif; min-width: 180px;">

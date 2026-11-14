@@ -73,3 +73,33 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Int
 /* Pulsing User Location Marker */
 .user-marker { width: 16px; height: 16px; background-color: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(66, 133, 244, 0.6); animation: pulse-blue 2s infinite; }
 @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(66, 133, 244, 0); } 100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); } }
+
+/* 11. Active Train Route Highlight UI */
+.clear-route-banner {
+  position: absolute;
+  top: 105px;
+  left: 20px;
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid #00BFA5;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  z-index: 1002;
+  box-shadow: 0 4px 12px rgba(0, 191, 165, 0.3);
+}
+.clear-route-banner.visible { display: flex; }
+.clear-route-btn {
+  background: #00BFA5;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
