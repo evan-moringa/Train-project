@@ -53,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Explicit map background click listener: closes any open popup & route
     map.on('click', (e) => {
-        // Ignore clicks that landed directly on a train marker pill or popup
         if (e.originalEvent && e.originalEvent.target) {
             const target = e.originalEvent.target;
             if (target.closest('.route-marker') || target.closest('.maplibregl-popup')) {
@@ -456,7 +455,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         .setHTML(`<div style="font-family: 'Inter', sans-serif; padding: 6px; font-size: 13px;">Loading schedule...</div>`);
 
                     popup.on('open', async () => {
-                        // Force-close any other open train popups immediately
                         closeAllPopupsAndRoutes(trainId);
                         activePopup = popup;
 
@@ -469,15 +467,34 @@ document.addEventListener("DOMContentLoaded", () => {
                                 const t = dataList[0];
                                 const stops = t.timeTableRows.filter(row => row.trainStopping);
                                 
+                                // Final Destination
                                 const finalStopCode = stops.length > 0 ? stops[stops.length - 1].stationShortCode : "Unknown";
                                 const destObj = allStations.find(s => s.stationShortCode === finalStopCode);
                                 const finalStopName = destObj ? destObj.stationName.replace(" asema", "") : finalStopCode;
                                 
+                                // Next Stop & ETA
                                 const now = new Date();
                                 const nextStop = stops.find(row => new Date(row.liveEstimateTime || row.scheduledTime) > now && row.type === 'ARRIVAL');
                                 const nextStopCode = nextStop ? nextStop.stationShortCode : null;
                                 const nextObj = nextStopCode ? allStations.find(s => s.stationShortCode === nextStopCode) : null;
                                 const nextStopName = nextObj ? nextObj.stationName.replace(" asema", "") : (nextStopCode || "End of Line");
+                                
+                                let etaText = "";
+                                if (nextStop) {
+                                    const etaDate = new Date(nextStop.liveEstimateTime || nextStop.scheduledTime);
+                                    const formattedEta = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    etaText = ` <span class="popup-eta">(ETA ${formattedEta})</span>`;
+                                }
+
+                                // Running Status (On Time vs. Delayed)
+                                const latestStatusRow = nextStop || [...t.timeTableRows].reverse().find(r => typeof r.differenceInMinutes === 'number');
+                                const delayMins = latestStatusRow && typeof latestStatusRow.differenceInMinutes === 'number'
+                                    ? latestStatusRow.differenceInMinutes
+                                    : 0;
+
+                                const statusBadgeHTML = delayMins > 1
+                                    ? `<span class="status-badge status-delayed">Delayed (+${delayMins} min)</span>`
+                                    : `<span class="status-badge status-on-time">On Time</span>`;
 
                                 const prefix = t.trainCategory === 'Commuter' ? 'Commuter' : (t.trainType || 'Train');
                                 const fullLabel = `${prefix} ${trainId}`.trim();
@@ -487,11 +504,14 @@ document.addEventListener("DOMContentLoaded", () => {
                                 highlightTrainRoute(t, fullLabel);
 
                                 popup.setHTML(`
-                                    <div style="font-family: 'Inter', sans-serif; min-width: 175px;">
-                                        <h4 style="margin:0 0 6px 0; border-bottom:1px solid #333; padding-bottom:5px; font-size: 15px;">${fullLabel}</h4>
-                                        <div style="font-size:12px; margin-bottom:4px; color:#ccc;">Speed: <span class="popup-speed">${currentSpeed} km/h</span></div>
-                                        <div style="font-size:12px; margin-bottom:4px; color:#ccc;">Next Stop: <span style="color: #00E676; font-weight: bold;">${nextStopName}</span></div>
-                                        <div style="font-size:12px; color:#ccc;">Bound for: <span class="popup-destination">${finalStopName}</span></div>
+                                    <div style="font-family: 'Inter', sans-serif;">
+                                        <div class="popup-header">
+                                            <h4 class="popup-title">${fullLabel}</h4>
+                                            ${statusBadgeHTML}
+                                        </div>
+                                        <div class="popup-row">Speed: <span class="popup-speed">${currentSpeed} km/h</span></div>
+                                        <div class="popup-row">Next Stop: <span style="color: #00E676; font-weight: bold;">${nextStopName}</span>${etaText}</div>
+                                        <div class="popup-row" style="margin-bottom:0;">Bound for: <span class="popup-destination">${finalStopName}</span></div>
                                     </div>
                                 `);
                             } else { popup.setHTML(`<div style="font-family: 'Inter', sans-serif; font-size: 12px;">Data unavailable</div>`); }
