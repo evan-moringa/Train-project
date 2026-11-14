@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let railwayNetworkGeoJSON = null;
     let activePopup = null;
     let selectedTrainId = null;
+    const trainMarkers = {};
 
     // Create floating "Clear Route" banner dynamically
     const clearBanner = document.createElement('div');
@@ -24,13 +25,42 @@ document.addEventListener("DOMContentLoaded", () => {
     clearBanner.innerHTML = `<span id="active-route-label">Route Active</span> <button class="clear-route-btn" id="clear-route-btn" title="Clear route">✕</button>`;
     document.body.appendChild(clearBanner);
 
-    document.getElementById('clear-route-btn').addEventListener('click', () => {
-        if (activePopup) {
-            const p = activePopup;
+    document.getElementById('clear-route-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeAllPopupsAndRoutes();
+    });
+
+    // Helper: Force-close every open popup and clear active route
+    function closeAllPopupsAndRoutes(exceptTrainId = null) {
+        Object.entries(trainMarkers).forEach(([id, marker]) => {
+            if (String(id) !== String(exceptTrainId)) {
+                const p = marker.getPopup();
+                if (p && p.isOpen()) {
+                    p.remove();
+                }
+            }
+        });
+
+        if (activePopup && !exceptTrainId) {
+            activePopup.remove();
             activePopup = null;
-            p.remove();
         }
-        clearHighlightedRoute();
+
+        if (!exceptTrainId) {
+            clearHighlightedRoute();
+        }
+    }
+
+    // Explicit map background click listener: closes any open popup & route
+    map.on('click', (e) => {
+        // Ignore clicks that landed directly on a train marker pill or popup
+        if (e.originalEvent && e.originalEvent.target) {
+            const target = e.originalEvent.target;
+            if (target.closest('.route-marker') || target.closest('.maplibregl-popup')) {
+                return;
+            }
+        }
+        closeAllPopupsAndRoutes();
     });
 
     // Zoom-adaptive marker sizing to prevent clustering when zoomed out
@@ -339,7 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 map.on('click', 'stations-layer', (e) => {
                     const props = e.features[0].properties;
-                    if (activePopup) activePopup.remove();
+                    closeAllPopupsAndRoutes();
                     activePopup = new maplibregl.Popup({ offset: 10, closeButton: false, closeOnClick: true })
                         .setLngLat(e.lngLat)
                         .setHTML(`<div style="font-weight: bold; font-family: Inter, sans-serif; font-size: 13px;">📍 ${props.name}</div>`)
@@ -374,7 +404,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentRefreshInterval = 5000;
     let trainFetchTimer = null;
-    const trainMarkers = {};
 
     if (openSettingsBtn && settingsPanel) openSettingsBtn.addEventListener('click', () => settingsPanel.classList.add('open'));
     if (closeSettingsBtn && settingsPanel) closeSettingsBtn.addEventListener('click', () => settingsPanel.classList.remove('open'));
@@ -423,16 +452,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         el.classList.add('dimmed');
                     }
 
-                    // closeOnClick: true ensures clicking anywhere away on the map closes the popup
                     const popup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: true })
                         .setHTML(`<div style="font-family: 'Inter', sans-serif; padding: 6px; font-size: 13px;">Loading schedule...</div>`);
 
                     popup.on('open', async () => {
-                        if (activePopup && activePopup !== popup) {
-                            const prev = activePopup;
-                            activePopup = null;
-                            prev.remove();
-                        }
+                        // Force-close any other open train popups immediately
+                        closeAllPopupsAndRoutes(trainId);
                         activePopup = popup;
 
                         try {
@@ -473,7 +498,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         } catch (e) { popup.setHTML(`<div style="font-family: 'Inter', sans-serif; font-size: 12px;">Error loading details</div>`); }
                     });
 
-                    // Clicking away on the map or clicking × clears the route & restores all trains
                     popup.on('close', () => {
                         if (activePopup === popup) {
                             activePopup = null;
